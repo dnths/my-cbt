@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>CBT Master v4.2</title>
+    <title>CBT Master v4.3</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
@@ -13,22 +13,44 @@
         .container { max-width: 500px; margin: 0 auto; padding: 15px; position: relative; }
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; min-height: 40px; }
         h1 { font-size: 18px; font-weight: 700; margin: 0; }
+        
+        /* 카드 스타일 */
         .card-sm { background: var(--card); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 8px; padding: 10px 15px; }
         .card-lg { background: var(--card); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 15px; padding: 20px; }
-        .item-row { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .item-text { flex-grow: 1; font-size: 15px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* 목록 레이아웃 */
+        .item-row { display: flex; align-items: center; gap: 10px; cursor: pointer; min-height: 36px; }
+        .item-text { flex-grow: 1; font-size: 15px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; word-break: break-all; }
+        .item-actions { flex-shrink: 0; display: flex; gap: 12px; align-items: center; }
+        .action-text { font-size: 13px; font-weight: 600; cursor: pointer; }
+        .blue { color: var(--edit-blue); }
+        .red { color: var(--delete-red); }
+
+        /* 버튼 */
         .btn-main { background: var(--accent); color: white; width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; }
         .btn-outline { background: none; border: 1px solid var(--border); color: var(--text); width: 100%; padding: 14px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+
+        /* 하단바 */
         .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); display: flex; justify-content: space-around; padding: 18px 0; border-top: 1px solid var(--border); z-index: 99; }
         .nav-item { background: none; border: none; color: var(--sub-text); font-size: 15px; font-weight: 600; cursor: pointer; }
         .nav-item.active { color: var(--accent); }
         .hidden { display: none !important; }
 
-        /* 문제 풀이 선택지 강조 스타일 */
-        .option-btn { width: 100%; padding: 14px; margin: 6px 0; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text); text-align: left; cursor: pointer; transition: 0.2s; }
-        .option-btn.selected { border: 2px solid var(--accent); } /* 내가 누른 것 표시 */
+        /* 플로팅/모달 */
+        #add-menu { position: absolute; top: 45px; right: 0; width: 150px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); z-index: 100; }
+        .menu-item { padding: 14px 16px; font-size: 14px; font-weight: 600; cursor: pointer; border-bottom: 1px solid var(--border); }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 200; }
+        .modal-content { background: var(--card); width: 85%; max-width: 320px; border-radius: 16px; padding: 20px; }
+        .modal-btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        .modal-btn-group button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: 600; }
+
+        /* 문제 풀이 */
+        .option-btn { width: 100%; padding: 14px; margin: 6px 0; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text); text-align: left; cursor: pointer; font-size: 15px; transition: 0.2s; }
+        .option-btn.selected { border: 2px solid var(--accent); }
         .option-btn.correct { background: var(--correct) !important; color: white !important; border-color: var(--correct) !important; font-weight: bold; }
         .option-btn.wrong { background: var(--wrong) !important; color: white !important; border-color: var(--wrong) !important; }
+        
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); box-sizing: border-box; font-family: inherit; }
     </style>
 </head>
 <body class="dark-mode">
@@ -40,32 +62,66 @@
             <h1 id="view-title">폴더 목록</h1>
         </div>
         <div id="top-add-btn" style="font-size:28px; cursor:pointer;" onclick="toggleAddMenu()">+</div>
+        <div id="add-menu" class="hidden">
+            <div class="menu-item" onclick="openModal('folder')">📂 폴더 생성</div>
+            <div class="menu-item" onclick="showAddQuestion()">📝 문제 추가</div>
+        </div>
     </header>
 
     <div id="view-folder" class="view">
-        <div id="quiz-header" class="hidden"><div class="card-lg"><div style="margin-bottom:12px; font-weight:700;">📝 문제 풀이</div><div style="display:flex; gap:10px;"><button class="btn-outline" onclick="startQuiz(false)">순서대로</button><button class="btn-main" onclick="startQuiz(true)">섞어서</button></div></div></div>
-        <div id="content-list"></div>
-    </div>
-
-    <div id="view-quiz" class="view hidden">
-        <div id="quiz-progress" style="text-align:right; font-size:12px; margin-bottom:10px;"></div>
-        <div class="card-lg">
-            <h2 id="quiz-q-text" style="font-size:17px; line-height:1.5;"></h2>
-            <div id="quiz-options"></div>
-            <div id="quiz-feedback" class="hidden" style="margin-top:20px; border-top:1px solid var(--border); padding-top:15px;"></div>
+        <div id="quiz-header" class="hidden">
+            <div class="card-lg">
+                <div style="font-size:14px; font-weight:700; margin-bottom:12px; color:var(--accent);">📝 문제 풀이</div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-outline" style="flex:1;" onclick="startQuiz(false)">순서대로</button>
+                    <button class="btn-main" style="flex:1;" onclick="startQuiz(true)">섞어서</button>
+                </div>
+            </div>
         </div>
-        <button id="next-btn" class="btn-main hidden" onclick="nextQuiz()">다음 문제</button>
+        <div id="content-list"></div>
     </div>
 
     <div id="view-setting" class="view hidden">
         <div class="card-lg">
-            <div style="font-weight:700; margin-bottom:15px;">☁️ 클라우드 동기화 (v4.2 디버그)</div>
+            <div style="font-weight:700; margin-bottom:15px;">☁️ 클라우드 동기화</div>
             <button id="auth-btn" class="btn-main" onclick="handleAuthClick()">구글 계정 연결</button>
             <div id="sync-controls" class="hidden">
                 <p id="sync-status" style="font-size:12px; color:var(--accent); margin-bottom:10px;"></p>
-                <button class="btn-outline" style="margin-bottom:10px;" onclick="syncToDrive()">현재 데이터 올리기 (Push)</button>
-                <button class="btn-outline" style="margin-bottom:10px;" onclick="pullFromDrive()">클라우드 데이터 받기 (Pull)</button>
-                <button class="btn-outline" style="color:var(--delete-red);" onclick="handleSignoutClick()">로그아웃</button>
+                <button class="btn-outline" style="margin-bottom:10px; color:var(--accent); border-color:var(--accent);" onclick="syncToDrive()">현재 데이터 올리기 (Push)</button>
+                <button class="btn-outline" style="margin-bottom:10px; color:var(--accent); border-color:var(--accent);" onclick="pullFromDrive()">클라우드 데이터 받기 (Pull)</button>
+                <button class="btn-outline" style="border-color:var(--delete-red); color:var(--delete-red);" onclick="handleSignoutClick()">로그아웃</button>
+            </div>
+        </div>
+        <div class="card-lg">
+            <div style="font-weight:700; margin-bottom:15px;">🎨 UI 설정</div>
+            <button class="btn-outline" onclick="toggleTheme()">다크/라이트 모드 전환</button>
+        </div>
+    </div>
+
+    <div id="view-detail" class="view hidden">
+        <div class="card-lg"><h2 id="detail-text" style="font-size:17px; margin:0;"></h2><div id="detail-options" style="margin:20px 0;"></div><div id="detail-note" style="font-size:14px; color:var(--sub-text); white-space:pre-wrap;"></div></div>
+        <button class="btn-main" onclick="openEditMode()">문제 수정</button>
+    </div>
+    <div id="view-edit" class="view hidden">
+        <h2 id="edit-title">문제 편집</h2>
+        <textarea id="q-text" placeholder="문제를 입력하세요" rows="3"></textarea>
+        <div id="opts-input"><input type="text" id="q-opt1" placeholder="1번 선택지"><input type="text" id="q-opt2" placeholder="2번 선택지"><input type="text" id="q-opt3" placeholder="3번 선택지"><input type="text" id="q-opt4" placeholder="4번 선택지"><input type="text" id="q-opt5" placeholder="5번 선택지"></div>
+        <input type="number" id="q-ans" placeholder="정답 번호 (1-5)"><textarea id="q-note" placeholder="해설 입력" rows="4"></textarea>
+        <button class="btn-main" onclick="saveQuestion()">저장하기</button>
+    </div>
+    <div id="view-quiz" class="view hidden">
+        <div id="quiz-progress" style="text-align:right; font-size:12px; margin-bottom:10px;"></div>
+        <div class="card-lg"><h2 id="quiz-q-text" style="font-size:17px;"></h2><div id="quiz-options"></div><div id="quiz-feedback" class="hidden" style="margin-top:20px; border-top:1px solid var(--border); padding-top:15px;"></div></div>
+        <button id="next-btn" class="btn-main hidden" onclick="nextQuiz()">다음 문제</button>
+    </div>
+
+    <div id="modal-ui" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 id="modal-title">폴더</h3>
+            <input type="text" id="modal-input">
+            <div class="modal-btn-group">
+                <button class="btn-outline" onclick="closeModal()">취소</button>
+                <button class="btn-main" onclick="handleModalConfirm()">확인</button>
             </div>
         </div>
     </div>
@@ -78,76 +134,109 @@
 
 <script>
     const CLIENT_ID = '457447322855-c441e44d677o9ai9resofp5c8modknd3.apps.googleusercontent.com';
-    let db = JSON.parse(localStorage.getItem('cbt_v4_2_db')) || { folders: { 'root': { name: '폴더 목록', parent: null, children: [] } } };
-    let currentId = 'root', currentView = 'folder', quizList = [], quizIdx = 0, accessToken = null, tokenClient;
+    let db = JSON.parse(localStorage.getItem('cbt_v4_3_db')) || { folders: { 'root': { name: '폴더 목록', parent: null, children: [] } } };
+    let currentId = 'root', currentView = 'folder', editingIdx = null, quizList = [], quizIdx = 0, accessToken = null, tokenClient, modalMode = '', targetEditId = '';
 
-    function saveDB() { localStorage.setItem('cbt_v4_2_db', JSON.stringify(db)); }
+    function saveDB() { localStorage.setItem('cbt_v4_3_db', JSON.stringify(db)); }
 
-    // 문제 풀이 정답 체크 로직 개선
-    function checkAns(selectedIdx) {
-        const q = quizList[quizIdx];
-        const btns = document.querySelectorAll('.option-btn');
-        
-        // 1. 모든 버튼 비활성화 및 내가 누른 것 강조
-        btns.forEach((btn, i) => {
-            btn.disabled = true;
-            if (i === selectedIdx) btn.classList.add('selected');
-            
-            // 2. 정답/오답 시각화 (이미지 8b8763 상황 해결)
-            if (i === q.ans) {
-                btn.classList.add('correct'); // 무조건 정답은 초록색
-            } else if (i === selectedIdx && i !== q.ans) {
-                btn.classList.add('wrong'); // 틀린 걸 눌렀으면 빨간색
-            }
+    // 뒤로가기 로직
+    function handleSmartBack() {
+        if (currentView === 'edit') switchTab(editingIdx !== null ? 'detail' : 'folder');
+        else if (currentView === 'detail' || currentView === 'quiz') switchTab('folder');
+        else if (currentView === 'folder' && currentId !== 'root') goBack();
+    }
+
+    // 렌더링
+    function render() {
+        const list = document.getElementById('content-list'), folder = db.folders[currentId];
+        list.innerHTML = '';
+        document.getElementById('view-title').innerText = folder.name;
+        document.getElementById('back-btn').classList.toggle('hidden', currentId === 'root' && currentView === 'folder');
+        document.getElementById('quiz-header').classList.toggle('hidden', !folder.children.some(c => c.type === 'question'));
+
+        folder.children.forEach((item, idx) => {
+            const isF = item.type === 'folder', data = isF ? db.folders[item.id] : item;
+            if(!data) return;
+            list.innerHTML += `<div class="card-sm"><div class="item-row" onclick="${isF ? `enterFolder('${item.id}')` : `viewQuestion(${idx})`}">
+                <div style="flex-shrink:0;">${isF ? '📂' : '📝'}</div>
+                <div class="item-text">${isF ? data.name : data.text}</div>
+                <div class="item-actions">
+                    ${isF ? `<span class="action-text blue" onclick="event.stopPropagation(); openModal('edit', '${item.id}')">수정</span>` : ''}
+                    <span class="action-text red" onclick="event.stopPropagation(); deleteItem(${idx})">삭제</span>
+                </div>
+            </div></div>`;
         });
-
-        document.getElementById('quiz-feedback').innerHTML = `
-            <div style="font-weight:bold; color:var(--correct); margin-bottom:10px;">정답: ${q.ans+1}번</div>
-            <div style="font-size:14px; color:var(--sub-text); line-height:1.6; white-space:pre-wrap;">${q.note || '해설이 없습니다.'}</div>
-        `;
-        document.getElementById('quiz-feedback').classList.remove('hidden');
-        document.getElementById('next-btn').classList.remove('hidden');
     }
 
-    // 클라우드 동기화 디버그용 알림 함수
-    function setSyncMsg(msg) {
-        const el = document.getElementById('sync-status');
-        if(el) el.innerText = msg;
+    function switchTab(tab) {
+        currentView = tab;
+        document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+        document.getElementById('view-' + tab).classList.remove('hidden');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('nav-' + (tab==='setting'?'setting':'folder')).classList.add('active');
+        document.getElementById('top-add-btn').classList.toggle('hidden', tab !== 'folder');
+        document.getElementById('add-menu').classList.add('hidden');
+        render();
     }
 
-    async function syncToDrive() {
-        if(!accessToken) return alert("로그인이 필요합니다.");
-        setSyncMsg("데이터 업로드 중...");
+    function enterFolder(id) { currentId = id; render(); }
+    function goBack() { if(db.folders[currentId].parent) { currentId = db.folders[currentId].parent; render(); } }
+    function toggleAddMenu() { document.getElementById('add-menu').classList.toggle('hidden'); }
+    function openModal(mode, id = '') { modalMode = mode; targetEditId = id; document.getElementById('add-menu').classList.add('hidden'); document.getElementById('modal-input').value = mode === 'edit' ? db.folders[id].name : ''; document.getElementById('modal-title').innerText = mode === 'folder' ? '새 폴더 생성' : '폴더명 수정'; document.getElementById('modal-ui').classList.remove('hidden'); setTimeout(()=>document.getElementById('modal-input').focus(), 50); }
+    function closeModal() { document.getElementById('modal-ui').classList.add('hidden'); }
+    function handleModalConfirm() { const val = document.getElementById('modal-input').value.trim(); if(!val) return; if(modalMode === 'folder') { const nid = 'f' + Date.now(); db.folders[nid] = { name: val, parent: currentId, children: [] }; db.folders[currentId].children.push({ type: 'folder', id: nid }); } else { db.folders[targetEditId].name = val; } saveDB(); closeModal(); render(); }
+    function deleteItem(idx) { if(confirm("삭제하시겠습니까?")) { const item = db.folders[currentId].children[idx]; if(item.type==='folder') delete db.folders[item.id]; db.folders[currentId].children.splice(idx, 1); saveDB(); render(); } }
+    function showAddQuestion() { editingIdx = null; clearInputs(); switchTab('edit'); }
+    function clearInputs() { document.getElementById('q-text').value=''; [1,2,3,4,5].forEach(i=>document.getElementById('q-opt'+i).value=''); document.getElementById('q-ans').value=''; document.getElementById('q-note').value=''; }
+    function saveQuestion() { const q = { type: 'question', text: document.getElementById('q-text').value, opts: [1,2,3,4,5].map(i => document.getElementById('q-opt'+i).value), ans: parseInt(document.getElementById('q-ans').value)-1, note: document.getElementById('q-note').value }; if(editingIdx !== null) db.folders[currentId].children[editingIdx] = q; else db.folders[currentId].children.push(q); saveDB(); switchTab('folder'); }
+    function viewQuestion(idx) { editingIdx = idx; const q = db.folders[currentId].children[idx]; document.getElementById('detail-text').innerText = q.text; document.getElementById('detail-options').innerHTML = q.opts.map((o, i) => o ? `<div style="padding:10px 0; border-bottom:1px solid var(--border); ${i === q.ans ? 'font-weight:bold; color:var(--correct);' : ''}">${i+1}. ${o}</div>` : '').join(''); document.getElementById('detail-note').innerText = q.note; switchTab('detail'); }
+    function openEditMode() { const q = db.folders[currentId].children[editingIdx]; document.getElementById('q-text').value = q.text; q.opts.forEach((v, i) => document.getElementById('q-opt'+(i+1)).value = v); document.getElementById('q-ans').value = q.ans + 1; document.getElementById('q-note').value = q.note; switchTab('edit'); }
+
+    // 퀴즈 시스템
+    function startQuiz(shuffle) { quizList = db.folders[currentId].children.filter(c => c.type === 'question'); if(quizList.length === 0) return; if(shuffle) quizList.sort(() => Math.random() - 0.5); quizIdx = 0; switchTab('quiz'); showQuiz(); }
+    function showQuiz() { const q = quizList[quizIdx]; document.getElementById('quiz-progress').innerText = `${quizIdx + 1} / ${quizList.length}`; document.getElementById('quiz-q-text').innerText = q.text; document.getElementById('quiz-options').innerHTML = q.opts.map((o, i) => o ? `<button class="option-btn" onclick="checkAns(${i})">${i+1}. ${o}</button>` : '').join(''); document.getElementById('quiz-feedback').classList.add('hidden'); document.getElementById('next-btn').classList.add('hidden'); }
+    function checkAns(selectedIdx) { const q = quizList[quizIdx]; const btns = document.querySelectorAll('.option-btn'); btns.forEach((btn, i) => { btn.disabled = true; if(i === selectedIdx) btn.classList.add('selected'); if(i === q.ans) btn.classList.add('correct'); else if(i === selectedIdx) btn.classList.add('wrong'); }); document.getElementById('quiz-feedback').innerHTML = `<div style="font-weight:bold; color:var(--correct); margin-bottom:10px;">정답: ${q.ans+1}번</div><div style="font-size:14px; color:var(--sub-text); line-height:1.6; white-space:pre-wrap;">${q.note || '해설이 없습니다.'}</div>`; document.getElementById('quiz-feedback').classList.remove('hidden'); document.getElementById('next-btn').classList.remove('hidden'); }
+    function nextQuiz() { quizIdx++; if(quizIdx < quizList.length) showQuiz(); else { alert("학습 완료!"); switchTab('folder'); } }
+    function toggleTheme() { document.body.classList.toggle('light-mode'); localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark'); }
+
+    // 구글 동기화
+    function gapiInit() { gapi.load('client', async () => { await gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] }); const t = sessionStorage.getItem('g_access_token'); if (t) { accessToken = t; gapi.client.setToken({ access_token: t }); onAuthSuccess(); } }); }
+    function gisInit() { tokenClient = google.accounts.oauth2.initTokenClient({ client_id: CLIENT_ID, scope: 'https://www.googleapis.com/auth/drive.file', callback: (resp) => { accessToken = resp.access_token; sessionStorage.setItem('g_access_token', accessToken); gapi.client.setToken({ access_token: accessToken }); onAuthSuccess(); } }); }
+    function onAuthSuccess() { document.getElementById('auth-btn').classList.add('hidden'); document.getElementById('sync-controls').classList.remove('hidden'); }
+    function handleAuthClick() { tokenClient.requestAccessToken({ prompt: accessToken ? '' : 'consent' }); }
+    function handleSignoutClick() { sessionStorage.removeItem('g_access_token'); location.reload(); }
+    async function syncToDrive() { 
+        if(!accessToken) return alert("로그인 필요");
+        document.getElementById('sync-status').innerText = "Push 중...";
         try {
             const fileName = "cbt_master_v4.json";
-            const content = JSON.stringify(db);
-            // 구글 드라이브 파일 찾기 및 생성/수정 로직 (생략 - 기존 로직 보강)
-            alert("클라우드 백업 완료!");
-            setSyncMsg("최근 동기화: " + new Date().toLocaleString());
-        } catch (e) {
-            alert("동기화 실패: " + e.message);
-        }
+            const blob = new Blob([JSON.stringify(db)], {type: 'application/json'});
+            const list = await gapi.client.drive.files.list({ q: `name='${fileName}' and trashed=false` });
+            if (list.result.files.length > 0) {
+                await fetch(`https://www.googleapis.com/upload/drive/v3/files/${list.result.files[0].id}?uploadType=media`, { method: 'PATCH', headers: { 'Authorization': `Bearer ${accessToken}` }, body: blob });
+            } else {
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify({name:fileName, mimeType:'application/json'})], {type:'application/json'}));
+                form.append('file', blob);
+                await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', { method: 'POST', headers: { 'Authorization': `Bearer ${accessToken}` }, body: form });
+            }
+            alert("백업 완료!");
+            document.getElementById('sync-status').innerText = "최근 백업: " + new Date().toLocaleTimeString();
+        } catch (e) { alert("오류: " + e.message); }
+    }
+    async function pullFromDrive() {
+        if(!accessToken) return alert("로그인 필요");
+        document.getElementById('sync-status').innerText = "Pull 중...";
+        try {
+            const list = await gapi.client.drive.files.list({ q: `name='cbt_master_v4.json' and trashed=false` });
+            if (list.result.files.length === 0) return alert("백업 파일 없음");
+            const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${list.result.files[0].id}?alt=media`, { headers: { 'Authorization': `Bearer ${accessToken}` } });
+            db = await resp.json(); saveDB(); 
+            alert("복구 완료!"); location.reload();
+        } catch (e) { alert("오류: " + e.message); }
     }
 
-    // (기타 렌더링 및 네비게이션 로직 v4.1 유지)
-    function startQuiz(shuffle) {
-        quizList = db.folders[currentId].children.filter(c => c.type === 'question');
-        if(quizList.length === 0) return;
-        if(shuffle) quizList.sort(() => Math.random() - 0.5);
-        quizIdx = 0; switchTab('quiz'); showQuiz();
-    }
-    function showQuiz() {
-        const q = quizList[quizIdx];
-        document.getElementById('quiz-progress').innerText = `${quizIdx + 1} / ${quizList.length}`;
-        document.getElementById('quiz-q-text').innerText = q.text;
-        document.getElementById('quiz-options').innerHTML = q.opts.map((o, i) => 
-            o ? `<button class="option-btn" onclick="checkAns(${i})">${i+1}. ${o}</button>` : '').join('');
-        document.getElementById('quiz-feedback').classList.add('hidden');
-        document.getElementById('next-btn').classList.add('hidden');
-    }
-
-    // 기본 초기화 (한글화 메뉴 적용)
-    window.onload = () => { render(); gapiInit(); gisInit(); };
+    window.onload = () => { if(localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode'); gapiInit(); gisInit(); render(); };
 </script>
 </body>
 </html>
