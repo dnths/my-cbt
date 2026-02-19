@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CBT Master v3.2 - Security Update</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <style>
+        :root {
+            --bg: #121212; --card: #1e1e1e; --text: #e0e0e0;
+            --sub-text: #888; --border: #2a2a2a; --accent: #2196f3;
+        }
+        body.light-mode {
+            --bg: #f8f9fa; --card: #ffffff; --text: #212529;
+            --sub-text: #adb5bd; --border: #e9ecef; --accent: #0d6efd;
+        }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0 0 80px 0; transition: 0.3s; line-height: 1.5; }
+        .container { max-width: 500px; margin: 0 auto; padding: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; min-height: 40px; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        h1 { font-size: 18px; font-weight: 700; margin: 0; }
+        .card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 12px; overflow: hidden; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; }
+        .item-text { font-size: 15px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+        .action-btns { display: flex; gap: 12px; margin-left: 15px; }
+        .action-link { font-size: 13px; color: var(--sub-text); cursor: pointer; font-weight: 500; }
+        .btn-main { background: var(--accent); color: white; width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: 600; cursor: pointer; margin-bottom: 8px; }
+        .btn-outline { background: none; border: 1px solid var(--accent); color: var(--accent); width: 100%; padding: 14px; border-radius: 10px; cursor: pointer; margin-bottom: 8px; font-weight: 600; }
+        .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); display: flex; justify-content: space-around; padding: 18px 0; border-top: 1px solid var(--border); z-index: 100; }
+        .nav-item { background: none; border: none; color: var(--sub-text); font-size: 15px; font-weight: 600; cursor: pointer; }
+        .nav-item.active { color: var(--accent); }
+        .hidden { display: none; }
+        input, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); box-sizing: border-box; font-size: 15px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; background: #ff5252; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header id="main-header">
+        <div class="header-left">
+            <span id="back-btn" class="hidden" style="cursor:pointer; font-size:20px;" onclick="goBack()">←</span>
+            <h1 id="view-title">폴더 목록</h1>
+        </div>
+        <div id="top-add" style="font-size:24px; cursor:pointer;" onclick="addFolderPrompt()">+</div>
+    </header>
+
+    <div id="view-folder" class="view">
+        <div id="sync-info" style="font-size:11px; color:var(--sub-text); margin-bottom:10px; text-align:right;">
+            <span id="dot" class="status-dot"></span><span id="status-text">구글 미연결</span>
+        </div>
+        <div id="quiz-header" class="hidden">
+            <div class="card" style="padding:15px; background:rgba(33, 150, 243, 0.05); border-color:var(--accent);">
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-outline" style="padding:10px; margin-bottom:0;" onclick="alert('준비 중')">순서대로</button>
+                    <button class="btn-main" style="padding:10px; margin-bottom:0;" onclick="alert('준비 중')">섞어서</button>
+                </div>
+                <button class="btn-outline" style="width:100%; margin-top:10px; margin-bottom:0; border-color:var(--sub-text); color:var(--sub-text);" onclick="showAddQuestion()">+ 문제 추가</button>
+            </div>
+        </div>
+        <div id="content-list"></div>
+    </div>
+
+    <div id="view-edit" class="view hidden">
+        <h2 id="edit-title" style="font-size:18px; margin-bottom:20px;">문제 편집</h2>
+        <input type="text" id="q-text" placeholder="문제 내용을 입력하세요">
+        <div style="background: rgba(255,255,255,0.03); padding: 10px; border-radius: 12px; margin-bottom: 10px;">
+            <input type="text" id="q-opt1" placeholder="선택지 1">
+            <input type="text" id="q-opt2" placeholder="선택지 2">
+            <input type="text" id="q-opt3" placeholder="선택지 3">
+            <input type="text" id="q-opt4" placeholder="선택지 4">
+            <input type="text" id="q-opt5" placeholder="선택지 5">
+        </div>
+        <input type="number" id="q-ans" placeholder="정답 번호 (1-5)">
+        <textarea id="q-note" placeholder="해설 및 서술형 키워드를 입력하세요" rows="4"></textarea>
+        <button class="btn-main" onclick="saveQuestion()">저장하기</button>
+        <button class="btn-outline" style="border-color:var(--sub-text); color:var(--sub-text);" onclick="switchTab('folder')">취소하고 돌아가기</button>
+    </div>
+
+    <div id="view-setting" class="view hidden">
+        <div class="card" style="padding:20px;">
+            <h3 style="margin-top:0;">☁️ 클라우드 동기화</h3>
+            <button id="auth-btn" class="btn-main" onclick="handleAuthClick()">구글 계정 연결</button>
+            <div id="sync-controls" class="hidden">
+                <button class="btn-outline" onclick="syncToDrive()">현재 데이터 올리기 (Push)</button>
+                <button class="btn-outline" onclick="pullFromDrive()">클라우드 데이터 받기 (Pull)</button>
+                <button class="btn-outline" style="border-color:#ff5252; color:#ff5252;" onclick="handleSignoutClick()">로그아웃</button>
+            </div>
+        </div>
+        <div class="card" style="padding:20px;">
+            <h3>🎨 테마 설정</h3>
+            <button class="btn-outline" onclick="toggleTheme()">다크/라이트 모드 전환</button>
+        </div>
+    </div>
+</div>
+
+<nav class="nav-bar">
+    <button id="nav-folder" class="nav-item active" onclick="switchTab('folder')">FOLDER</button>
+    <button id="nav-setting" class="nav-item" onclick="switchTab('setting')">SETTING</button>
+</nav>
+
+<script>
+    const CLIENT_ID = '457447322855-c441e44d677o9ai9resofp5c8modknd3.apps.googleusercontent.com';
+    const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+    const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+
+    let db = JSON.parse(localStorage.getItem('cbt_v3_2_db')) || { 
+        folders: { 'root': { name: '폴더 목록', parent: null, children: [] } },
+        config: { theme: 'dark-mode' }
+    };
+    let currentId = 'root';
+    let editingIdx = null;
+    let accessToken = null;
+    let tokenClient;
+
+    function saveDB() { localStorage.setItem('cbt_v3_2_db', JSON.stringify(db)); }
+
+    // --- 화면 전환 (보안 로직 추가) ---
+    function switchTab(tab) {
+        document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+        document.getElementById('view-' + tab).classList.remove('hidden');
+        
+        // 내비게이션 활성화
+        document.getElementById('nav-folder').classList.toggle('active', tab === 'folder' || tab === 'edit');
+        document.getElementById('nav-setting').classList.toggle('active', tab === 'setting');
+
+        // [핵심] 문제 편집창에서는 헤더의 뒤로가기와 추가 버튼을 숨김
+        const isEditing = (tab === 'edit');
+        document.getElementById('back-btn').classList.toggle('hidden', isEditing || currentId === 'root');
+        document.getElementById('top-add').classList.toggle('hidden', isEditing || tab === 'setting');
+        
+        if(tab === 'folder') render();
+    }
+
+    // --- 데이터 렌더링 ---
+    function render() {
+        const list = document.getElementById('content-list');
+        const folder = db.folders[currentId];
+        list.innerHTML = '';
+        document.getElementById('view-title').innerText = folder.name;
+        
+        // 폴더 뷰에서만 뒤로가기 버튼 노출 판단
+        document.getElementById('back-btn').classList.toggle('hidden', currentId === 'root');
+        document.getElementById('quiz-header').classList.toggle('hidden', currentId === 'root');
+
+        folder.children.forEach((item, idx) => {
+            const isF = item.type === 'folder';
+            const data = isF ? db.folders[item.id] : item;
+            if(!data) return;
+
+            list.innerHTML += `
+                <div class="card">
+                    <div class="item-row">
+                        <div class="item-text" onclick="${isF ? `enterFolder('${item.id}')` : `editQuestion(${idx})`}">
+                            ${isF ? '📂 ' + data.name : '📝 ' + data.text}
+                        </div>
+                        <div class="action-btns">
+                            <span class="action-link" style="color:var(--accent)" onclick="renameItem('${item.id}', ${idx}, event)">수정</span>
+                            <span class="action-link" onclick="deleteItem(${idx}, event)">삭제</span>
+                        </div>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function enterFolder(id) { currentId = id; render(); }
+    function goBack() { if(db.folders[currentId].parent) { currentId = db.folders[currentId].parent; render(); } }
+
+    function addFolderPrompt() {
+        const name = prompt("새 폴더 이름"); if (!name) return;
+        const newId = 'f' + Date.now();
+        db.folders[newId] = { name: name, parent: currentId, children: [] };
+        db.folders[currentId].children.push({ type: 'folder', id: newId });
+        saveDB(); render();
+    }
+
+    // --- 문제 편집 로직 ---
+    function showAddQuestion() { editingIdx = null; clearInputs(); switchTab('edit'); }
+    function clearInputs() {
+        document.getElementById('q-text').value = '';
+        for(let i=1; i<=5; i++) document.getElementById('q-opt'+i).value = '';
+        document.getElementById('q-ans').value = '';
+        document.getElementById('q-note').value = '';
+        document.getElementById('edit-title').innerText = "새 문제 추가";
+    }
+
+    function saveQuestion() {
+        const qText = document.getElementById('q-text').value;
+        if(!qText) return alert("문제 내용은 필수입니다.");
+
+        const q = {
+            type: 'question',
+            text: qText,
+            opts: [1,2,3,4,5].map(i => document.getElementById('q-opt'+i).value),
+            ans: parseInt(document.getElementById('q-ans').value) - 1,
+            note: document.getElementById('q-note').value
+        };
+        if(editingIdx !== null) db.folders[currentId].children[editingIdx] = q;
+        else db.folders[currentId].children.push(q);
+        saveDB(); switchTab('folder');
+    }
+
+    function editQuestion(idx) {
+        editingIdx = idx;
+        const q = db.folders[currentId].children[idx];
+        document.getElementById('edit-title').innerText = "문제 수정";
+        document.getElementById('q-text').value = q.text;
+        q.opts.forEach((v, i) => document.getElementById('q-opt'+(i+1)).value = v);
+        document.getElementById('q-ans').value = q.ans + 1;
+        document.getElementById('q-note').value = q.note;
+        switchTab('edit');
+    }
+
+    function renameItem(id, idx, e) {
+        e.stopPropagation();
+        if(id !== 'undefined' && db.folders[id]) {
+            const n = prompt("폴더 이름 수정", db.folders[id].name);
+            if(n) db.folders[id].name = n;
+        } else {
+            const n = prompt("문제 내용 수정", db.folders[currentId].children[idx].text);
+            if(n) db.folders[currentId].children[idx].text = n;
+        }
+        saveDB(); render();
+    }
+
+    function deleteItem(idx, e) {
+        e.stopPropagation();
+        if(confirm("정말 삭제하시겠습니까?")) {
+            const item = db.folders[currentId].children[idx];
+            if(item.type === 'folder') delete db.folders[item.id];
+            db.folders[currentId].children.splice(idx, 1);
+            saveDB(); render();
+        }
+    }
+
+    // --- 테마 및 구글 동기화 (기존 동일) ---
+    function toggleTheme() {
+        document.body.classList.toggle('light-mode');
+        db.config.theme = document.body.classList.contains('light-mode') ? 'light-mode' : 'dark-mode';
+        saveDB();
+    }
+
+    function gapiLoaded() { gapi.load('client', () => gapi.client.init({ discoveryDocs: [DISCOVERY_DOC] })); }
+    function gisLoaded() {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID, scope: SCOPES,
+            callback: (resp) => { accessToken = resp.access_token; onAuthSuccess(); },
+        });
+    }
+    function handleAuthClick() { tokenClient.requestAccessToken({prompt: accessToken ? '' : 'consent'}); }
+    function onAuthSuccess() {
+        document.getElementById('auth-btn').classList.add('hidden');
+        document.getElementById('sync-controls').classList.remove('hidden');
+        document.getElementById('dot').style.background = '#4caf50';
+        document.getElementById('status-text').innerText = '클라우드 연결됨';
+    }
+    function handleSignoutClick() { google.accounts.oauth2.revokeToken(accessToken); location.reload(); }
+
+    async function syncToDrive() {
+        const fileName = 'cbt_final_data.json';
+        const blob = new Blob([JSON.stringify(db)], {type: 'application/json'});
+        try {
+            const list = await gapi.client.drive.files.list({ q: `name='${fileName}' and trashed=false` });
+            const files = list.result.files;
+            if (files.length > 0) {
+                await fetch(`https://www.googleapis.com/upload/drive/v3/files/${files[0].id}?uploadType=media`, {
+                    method: 'PATCH', headers: { 'Authorization': `Bearer ${accessToken}` }, body: blob
+                });
+            } else {
+                const metadata = { name: fileName, mimeType: 'application/json' };
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+                form.append('file', blob);
+                await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                    method: 'POST', headers: { 'Authorization': `Bearer ${accessToken}` }, body: form
+                });
+            }
+            alert("동기화 완료!");
+        } catch (e) { alert("오류: " + e.message); }
+    }
+
+    async function pullFromDrive() {
+        const fileName = 'cbt_final_data.json';
+        try {
+            const list = await gapi.client.drive.files.list({ q: `name='${fileName}' and trashed=false` });
+            if (list.result.files.length === 0) return alert("저장된 데이터 없음");
+            const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${list.result.files[0].id}?alt=media`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            db = await resp.json(); saveDB(); location.reload();
+        } catch (e) { alert("가져오기 실패"); }
+    }
+
+    window.onload = () => { 
+        if(db.config.theme === 'light-mode') document.body.classList.add('light-mode');
+        gapiLoaded(); gisLoaded(); render(); 
+    };
+</script>
+</body>
+</html>
