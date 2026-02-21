@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>CBT Master v4.6</title>
+    <title>CBT Master v4.7</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
@@ -14,14 +14,11 @@
             --base-font: 15px; --container-w: 550px;
         }
         body.light-mode { --bg: #f8f9fa; --card: #ffffff; --text: #212529; --sub-text: #adb5bd; --border: #e9ecef; --accent: #0d6efd; }
-        
-        @media (min-width: 768px) {
-            :root { --base-font: 18px; --container-w: 1000px; }
-        }
+        @media (min-width: 768px) { :root { --base-font: 18px; --container-w: 1000px; } }
 
         body { font-family: 'Pretendard', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 70px 0 80px 0; transition: 0.3s; font-size: var(--base-font); }
         
-        /* 3. 상단바 고정 */
+        /* 상단바 고정 및 페이지 이름 제거 */
         header { 
             position: fixed; top: 0; left: 0; right: 0; height: 60px;
             background: var(--bg); border-bottom: 1px solid var(--border);
@@ -30,32 +27,33 @@
         .header-inner { width: 100%; max-width: var(--container-w); padding: 0 15px; display: flex; justify-content: space-between; align-items: center; }
         
         .container { max-width: var(--container-w); margin: 0 auto; padding: 15px; }
-        
-        .header-icons { display: flex; gap: 15px; align-items: center; }
-        .icon-btn { font-size: 24px; cursor: pointer; user-select: none; }
+        .header-icons { display: flex; gap: 20px; align-items: center; }
+        .icon-btn { font-size: 22px; cursor: pointer; user-select: none; font-weight: normal; }
 
-        /* 카드 및 목록 */
+        /* 카드 및 목록 (아이콘 제거) */
         .card-sm { background: var(--card); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 10px; padding: 15px; }
         .card-lg { background: var(--card); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; padding: 25px; }
-        
         .item-row { display: flex; align-items: center; gap: 12px; cursor: pointer; }
         .item-text { flex-grow: 1; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        /* 하단바 */
+        /* 하단바 (아이콘 제거) */
         .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); display: flex; justify-content: center; padding: 15px 0; border-top: 1px solid var(--border); z-index: 999; }
         .nav-item { background: none; border: none; color: var(--accent); font-size: 1.1rem; font-weight: 700; cursor: pointer; }
 
-        /* 버튼 */
-        .btn-group-row { display: flex; gap: 10px; margin-top: 15px; }
+        /* 팝업 메뉴 (아이콘 제거) */
+        #popup-menu { position: fixed; top: 65px; right: 20px; width: 160px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 1100; overflow: hidden; }
+        .menu-item { padding: 15px; font-size: 0.95rem; font-weight: 600; cursor: pointer; border-bottom: 1px solid var(--border); text-align: center; }
+        .menu-item:last-child { border-bottom: none; }
+
+        /* 모달 팝업 (폴더 생성용) */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        .modal-content { background: var(--card); width: 85%; max-width: 350px; border-radius: 16px; padding: 25px; border: 1px solid var(--border); }
+        .modal-btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        
         .btn-main { background: var(--accent); color: white; border: none; flex: 1; padding: 15px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 1rem; }
         .btn-outline { background: none; border: 1px solid var(--border); color: var(--text); flex: 1; padding: 15px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 1rem; }
 
-        /* 팝업 */
-        #popup-menu { position: fixed; top: 65px; right: 20px; width: 180px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 1100; overflow: hidden; }
-        .menu-item { padding: 15px; font-size: 0.95rem; font-weight: 600; cursor: pointer; border-bottom: 1px solid var(--border); }
         .hidden { display: none !important; }
-
-        /* 4. 반응형 입력창 */
         input, textarea { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); box-sizing: border-box; font-size: 1rem; }
         .option-btn { width: 100%; padding: 16px; margin: 8px 0; border: 1px solid var(--border); border-radius: 10px; background: var(--card); color: var(--text); text-align: left; cursor: pointer; }
         .option-btn.selected { border: 2px solid var(--accent); }
@@ -67,14 +65,13 @@
 
 <header>
     <div class="header-inner">
-        <div style="display:flex; align-items:center; gap:10px;">
+        <div style="display:flex; align-items:center;">
             <span id="back-btn" class="hidden" onclick="handleSmartBack()" style="cursor:pointer; font-size:24px;">←</span>
-            <h1 id="view-title">홈</h1>
-        </div>
+            </div>
         <div class="header-icons">
             <span class="icon-btn" onclick="toggleMenu('menu')">≡</span>
             <span class="icon-btn" onclick="toggleMenu('add')">+</span>
-            <span class="icon-btn" onclick="switchTab('setting')">⚙️</span>
+            <span class="icon-btn" onclick="switchTab('setting')" style="font-size:26px;">⚙</span>
         </div>
     </div>
     <div id="popup-menu" class="hidden"></div>
@@ -87,7 +84,7 @@
 
     <div id="view-setting" class="view hidden">
         <div class="card-lg">
-            <h3>☁️ 구글 동기화</h3>
+            <h3>클라우드 동기화</h3>
             <button id="auth-btn" class="btn-main" onclick="handleAuthClick()">계정 연결</button>
             <div id="sync-controls" class="hidden">
                 <p id="sync-status" style="color:var(--accent); margin-bottom:15px;"></p>
@@ -96,13 +93,13 @@
             </div>
         </div>
         <div class="card-lg">
-            <h3>🎨 화면 설정</h3>
+            <h3>화면 설정</h3>
             <button class="btn-outline" onclick="toggleTheme()">다크/라이트 모드 전환</button>
         </div>
     </div>
 
     <div id="view-edit" class="view hidden">
-        <h2 id="edit-header">문제 추가</h2>
+        <h2 id="edit-header" style="margin-top:0;">문제 추가</h2>
         <textarea id="q-text" placeholder="문제를 입력하세요" rows="4"></textarea>
         <div id="opts-input">
             <input type="text" id="q-opt1" placeholder="1번 선택지">
@@ -121,17 +118,17 @@
 
     <div id="view-detail" class="view hidden">
         <div class="card-lg">
-            <h2 id="detail-text" style="font-size:1.1rem;"></h2>
+            <h2 id="detail-text" style="font-size:1.1rem; margin-top:0;"></h2>
             <div id="detail-options" style="margin:20px 0;"></div>
             <div id="detail-note" style="color:var(--sub-text); font-size:0.9rem; border-top:1px solid var(--border); padding-top:15px;"></div>
         </div>
-        <button class="btn-main" onclick="openEditMode()">문제 수정</button>
+        <button class="btn-main" onclick="openEditMode()">수정하기</button>
     </div>
 
     <div id="view-quiz" class="view hidden">
         <div id="quiz-progress" style="text-align:right; font-size:0.9rem; margin-bottom:10px;"></div>
         <div class="card-lg">
-            <h2 id="quiz-q-text" style="font-size:1.1rem;"></h2>
+            <h2 id="quiz-q-text" style="font-size:1.1rem; margin-top:0;"></h2>
             <div id="quiz-options"></div>
             <div id="quiz-feedback" class="hidden" style="margin-top:20px; border-top:1px solid var(--border); padding-top:15px;"></div>
         </div>
@@ -139,28 +136,37 @@
     </div>
 </div>
 
+<div id="modal-ui" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h3 id="modal-title" style="margin-top:0;">폴더 생성</h3>
+        <input type="text" id="modal-input" placeholder="이름을 입력하세요">
+        <div class="modal-btn-group">
+            <button class="btn-outline" onclick="closeModal()">취소</button>
+            <button class="btn-main" onclick="handleModalConfirm()">확인</button>
+        </div>
+    </div>
+</div>
+
 <nav class="nav-bar">
-    <button class="nav-item" onclick="goHome()">🏠 홈</button>
+    <button class="nav-item" onclick="goHome()">홈</button>
 </nav>
 
 <script>
     const CLIENT_ID = '457447322855-c441e44d677o9ai9resofp5c8modknd3.apps.googleusercontent.com';
-    let db = JSON.parse(localStorage.getItem('cbt_v4_6_db')) || { folders: { 'root': { name: '홈', parent: null, children: [] } } };
+    let db = JSON.parse(localStorage.getItem('cbt_v4_7_db')) || { folders: { 'root': { name: '홈', parent: null, children: [] } } };
     let currentId = 'root', currentView = 'folder', editingIdx = null, quizList = [], quizIdx = 0, tokenClient = null;
 
-    function saveDB() { localStorage.setItem('cbt_v4_6_db', JSON.stringify(db)); }
+    function saveDB() { localStorage.setItem('cbt_v4_7_db', JSON.stringify(db)); }
 
     function render() {
         const list = document.getElementById('content-list'), folder = db.folders[currentId];
         list.innerHTML = '';
-        document.getElementById('view-title').innerText = folder.name;
         document.getElementById('back-btn').classList.toggle('hidden', currentId === 'root' && currentView === 'folder');
 
         folder.children.forEach((item, idx) => {
             const isF = item.type === 'folder', data = isF ? db.folders[item.id] : item;
             list.innerHTML += `<div class="card-sm"><div class="item-row" onclick="${isF ? `enterFolder('${item.id}')` : `viewQuestion(${idx})`}">
-                <span>${isF ? '📂' : '📝'}</span>
-                <div class="item-text">${isF ? data.name : data.text}</div>
+                <div class="item-text">${data.name || data.text}</div>
                 <div style="display:flex; gap:12px; flex-shrink:0;">
                     ${isF ? `<span style="color:var(--edit-blue); font-size:13px;" onclick="event.stopPropagation(); renameFolder('${item.id}')">수정</span>` : ''}
                     <span style="color:var(--delete-red); font-size:13px;" onclick="event.stopPropagation(); deleteItem(${idx})">삭제</span>
@@ -188,9 +194,28 @@
         const menu = document.getElementById('popup-menu');
         if (!menu.classList.contains('hidden')) { menu.classList.add('hidden'); return; }
         let html = (type === 'add') ? 
-            `<div class="menu-item" onclick="addFolder()">📂 폴더 생성</div><div class="menu-item" onclick="showAddQuestion()">📝 문제 추가</div>` :
-            `<div class="menu-item" onclick="startQuiz(false)">▶️ 순서대로 풀기</div><div class="menu-item" onclick="startQuiz(true)">🔀 섞어서 풀기</div>`;
+            `<div class="menu-item" onclick="openModal()">폴더 생성</div><div class="menu-item" onclick="showAddQuestion()">문제 추가</div>` :
+            `<div class="menu-item" onclick="startQuiz(false)">순서대로 풀기</div><div class="menu-item" onclick="startQuiz(true)">섞어서 풀기</div>`;
         menu.innerHTML = html; menu.classList.remove('hidden');
+    }
+
+    // 모달 제어 로직 (팝업창)
+    function openModal() { 
+        document.getElementById('popup-menu').classList.add('hidden');
+        document.getElementById('modal-input').value = '';
+        document.getElementById('modal-ui').classList.remove('hidden');
+        document.getElementById('modal-input').focus();
+    }
+    function closeModal() { document.getElementById('modal-ui').classList.add('hidden'); }
+    function handleModalConfirm() {
+        const val = document.getElementById('modal-input').value.trim();
+        if(val) {
+            const id = 'f'+Date.now();
+            db.folders[id] = {name:val, parent:currentId, children:[]};
+            db.folders[currentId].children.push({type:'folder', id});
+            saveDB(); render();
+        }
+        closeModal();
     }
 
     function showAddQuestion() { editingIdx = null; clearInputs(); switchTab('edit'); document.getElementById('edit-header').innerText = "문제 추가"; }
@@ -221,11 +246,9 @@
     }
 
     function clearInputs() { document.getElementById('q-text').value=''; [1,2,3,4,5].forEach(i=>document.getElementById('q-opt'+i).value=''); document.getElementById('q-ans').value=''; document.getElementById('q-note').value=''; }
-    function addFolder() { const n = prompt("폴더 이름:"); if(n) { const id = 'f'+Date.now(); db.folders[id] = {name:n, parent:currentId, children:[]}; db.folders[currentId].children.push({type:'folder', id}); saveDB(); render(); } }
     function deleteItem(idx) { if(confirm("삭제하시겠습니까?")) { db.folders[currentId].children.splice(idx,1); saveDB(); render(); } }
     function toggleTheme() { document.body.classList.toggle('light-mode'); }
 
-    // 퀴즈 및 동기화 (기존 로직 포함)
     function startQuiz(shuf) {
         quizList = db.folders[currentId].children.filter(c => c.type === 'question');
         if(!quizList.length) return alert("문제가 없습니다.");
@@ -247,40 +270,34 @@
     }
     function nextQuiz() { quizIdx++; if(quizIdx < quizList.length) showQuiz(); else { alert("완료!"); switchTab('folder'); } }
 
-    // 구글 동기화
+    // 구글 동기화 유지
     function gInit() {
         gapi.load('client', async () => { await gapi.client.init({ discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"] }); });
         tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: CLIENT_ID, scope: 'https://www.googleapis.com/auth/drive.file',
-            callback: (tokenResponse) => {
-                if (tokenResponse.access_token) {
-                    document.getElementById('auth-btn').classList.add('hidden');
-                    document.getElementById('sync-controls').classList.remove('hidden');
-                }
-            }
+            callback: (res) => { if (res.access_token) { document.getElementById('auth-btn').classList.add('hidden'); document.getElementById('sync-controls').classList.remove('hidden'); } }
         });
     }
     function handleAuthClick() { tokenClient.requestAccessToken(); }
     async function syncToDrive() {
-        const fileName = "cbt_master_v4.json";
-        const blob = new Blob([JSON.stringify(db)], {type: 'application/json'});
-        const list = await gapi.client.drive.files.list({ q: `name='${fileName}' and trashed=false` });
         const token = gapi.client.getToken().access_token;
+        const blob = new Blob([JSON.stringify(db)], {type: 'application/json'});
+        const list = await gapi.client.drive.files.list({ q: "name='cbt_master_v4.json' and trashed=false" });
         if (list.result.files.length > 0) {
             await fetch(`https://www.googleapis.com/upload/drive/v3/files/${list.result.files[0].id}?uploadType=media`, { method: 'PATCH', headers: { 'Authorization': `Bearer ${token}` }, body: blob });
         } else {
             const form = new FormData();
-            form.append('metadata', new Blob([JSON.stringify({name:fileName, mimeType:'application/json'})], {type:'application/json'}));
+            form.append('metadata', new Blob([JSON.stringify({name:'cbt_master_v4.json', mimeType:'application/json'})], {type:'application/json'}));
             form.append('file', blob);
             await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: form });
         }
-        alert("백업 성공!");
+        alert("백업 성공");
     }
     async function pullFromDrive() {
-        const list = await gapi.client.drive.files.list({ q: "name='cbt_master_v4.json' and trashed=false" });
         const token = gapi.client.getToken().access_token;
+        const list = await gapi.client.drive.files.list({ q: "name='cbt_master_v4.json' and trashed=false" });
         const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${list.result.files[0].id}?alt=media`, { headers: { 'Authorization': `Bearer ${token}` } });
-        db = await resp.json(); saveDB(); alert("복구 성공!"); render();
+        db = await resp.json(); saveDB(); alert("복구 성공"); render();
     }
 
     window.onload = () => { gInit(); render(); };
