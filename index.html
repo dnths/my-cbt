@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>CBT Master v5.0</title>
+    <title>CBT Master v5.1</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
@@ -16,59 +16,37 @@
         
         body { font-family: 'Pretendard', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 60px 0 100px 0; transition: 0.3s; }
         
-        /* 5. 상단 바: 앱 이름만 배치 */
-        header { 
-            position: fixed; top: 0; left: 0; right: 0; height: 50px; 
-            background: var(--bg); border-bottom: 1px solid var(--border); 
-            display: flex; align-items: center; padding: 0 20px; z-index: 1000; 
-        }
+        header { position: fixed; top: 0; left: 0; right: 0; height: 50px; background: var(--bg); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 1000; }
         .logo { font-size: 0.9rem; font-weight: 800; opacity: 0.5; letter-spacing: 1px; }
 
         .container { max-width: var(--container-w); margin: 0 auto; padding: 15px; }
-        /* 3.1 설정 페이지 PC 전용 폭 */
         .container.setting-view { max-width: var(--setting-w); }
 
-        /* 3. 버튼 가독성 및 길이 통일 */
-        .btn-full { 
-            width: 100%; padding: 16px; margin-bottom: 10px; border-radius: 10px; 
-            border: 1px solid var(--border); background: var(--card); color: var(--text); 
-            font-weight: 600; cursor: pointer; font-size: 1rem; transition: 0.2s;
-        }
-        @media (min-width: 1024px) {
-            .btn-full { font-size: calc(1rem + 3px); } /* 3.2 PC에서 3px 상승 */
-        }
+        .btn-full { width: 100%; padding: 16px; margin-bottom: 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-weight: 600; cursor: pointer; font-size: 1rem; }
+        @media (min-width: 1024px) { .btn-full { font-size: calc(1rem + 3px); } }
 
-        /* 2. 하단 바 통합 디자인 */
-        .nav-bar { 
-            position: fixed; bottom: 0; left: 0; right: 0; 
-            background: var(--card); display: flex; justify-content: space-around; 
-            padding: 15px 0 25px 0; border-top: 1px solid var(--border); z-index: 2000; 
-        }
-        .nav-item { 
-            background: none; border: none; color: var(--sub-text); 
-            font-size: 0.9rem; font-weight: 700; cursor: pointer; position: relative;
-        }
+        .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); display: flex; justify-content: space-around; padding: 15px 0 25px 0; border-top: 1px solid var(--border); z-index: 2000; }
+        .nav-item { background: none; border: none; color: var(--sub-text); font-size: 0.9rem; font-weight: 700; cursor: pointer; position: relative; }
         .nav-item.active { color: var(--accent); }
 
-        /* 4. 하단 버튼 위 전사되는 팝업 메뉴 */
-        .pop-menu { 
-            position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%);
-            width: 140px; background: var(--card); border: 1px solid var(--border);
-            border-radius: 12px; box-shadow: 0 -5px 20px rgba(0,0,0,0.4); overflow: hidden; display: none;
-        }
+        .pop-menu { position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%); width: 140px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 -5px 20px rgba(0,0,0,0.4); overflow: hidden; display: none; }
         .pop-menu div { padding: 15px; text-align: center; border-bottom: 1px solid var(--border); font-size: 0.9rem; color: var(--text); }
         .pop-menu div:last-child { border-bottom: none; }
 
-        /* 공통 카드 스타일 */
-        .card-sm { background: var(--card); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 10px; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .card-sm { background: var(--card); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 10px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .card-lg { background: var(--card); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; padding: 20px; }
         .tag-badge { font-size: 11px; background: rgba(33, 150, 243, 0.1); color: var(--accent); padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
+        .memo-body { white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem; margin-top: 10px; color: var(--text); }
+        
         .hidden { display: none !important; }
+        input, textarea { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); box-sizing: border-box; font-family: inherit; }
     </style>
 </head>
 <body class="dark-mode">
 
 <header>
     <div class="logo">CBT MASTER</div>
+    <div id="memo-header-btn" class="hidden" onclick="showAddMemo()" style="font-size: 0.85rem; font-weight: 700; color: var(--accent); cursor: pointer;">글쓰기</div>
 </header>
 
 <div id="main-container" class="container">
@@ -81,66 +59,86 @@
     </div>
 
     <div id="view-setting" class="view hidden">
-        <div class="section-title" style="margin-bottom: 20px; font-weight: 700;">클라우드 동기화</div>
-        <div id="user-info" style="color: var(--sub-text); margin-bottom: 10px; font-size: 0.9rem;">연결 전</div>
+        <h3 style="margin-top:0;">클라우드 동기화</h3>
+        <div id="user-info" style="color: var(--sub-text); margin-bottom: 15px; font-size: 0.9rem;">연결 전</div>
         <button id="auth-btn" class="btn-full" style="background: var(--accent); border:none; color:white;" onclick="handleAuthClick()">계정 연결</button>
-        
         <div id="sync-controls" class="hidden">
             <button class="btn-full" onclick="syncToDrive()">스마트 백업 (Push)</button>
             <button class="btn-full" onclick="pullFromDrive()">최신 데이터 가져오기 (Pull)</button>
         </div>
-
-        <div class="section-title" style="margin: 30px 0 20px 0; font-weight: 700;">화면 설정</div>
+        <h3 style="margin-top:30px;">화면 설정</h3>
         <button class="btn-full" onclick="toggleTheme()">다크/라이트 모드 전환</button>
+    </div>
+
+    <div id="view-edit" class="view hidden">
+        <h2 id="edit-title">문제 추가</h2>
+        <textarea id="q-text" placeholder="제목 또는 문제 내용" rows="3"></textarea>
+        <div id="opts-area">
+            <input type="text" id="q-opt1" placeholder="1번 선택지">
+            <input type="text" id="q-opt2" placeholder="2번 선택지">
+            <input type="text" id="q-opt3" placeholder="3번 선택지">
+            <input type="text" id="q-opt4" placeholder="4번 선택지">
+            <input type="text" id="q-opt5" placeholder="5번 선택지">
+            <input type="number" id="q-ans" placeholder="정답 번호 (1-5)">
+        </div>
+        <input type="text" id="q-tags" placeholder="태그 (#요약 #필수)">
+        <textarea id="q-note" placeholder="내용 및 메모" rows="8"></textarea>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-full" style="background:none;" onclick="switchTab('folder')">취소</button>
+            <button class="btn-full" style="background:var(--accent); border:none; color:white;" onclick="saveItem()">저장하기</button>
+        </div>
     </div>
 </div>
 
 <nav class="nav-bar">
     <div class="nav-item" id="nav-home" onclick="goHome()">홈</div>
-    
-    <div class="nav-item" id="nav-add" onclick="togglePop('pop-add')">
-        생성
+    <div class="nav-item" id="nav-add" onclick="togglePop('pop-add')">생성
         <div id="pop-add" class="pop-menu">
             <div onclick="openModal()">폴더 생성</div>
             <div onclick="showAddQuestion()">문제 추가</div>
         </div>
     </div>
-
-    <div class="nav-item" id="nav-quiz" onclick="togglePop('pop-quiz')">
-        풀이
+    <div class="nav-item" id="nav-quiz" onclick="togglePop('pop-quiz')">풀이
         <div id="pop-quiz" class="pop-menu">
             <div onclick="startQuiz(false)">순서대로</div>
             <div onclick="startQuiz(true)">섞어서</div>
         </div>
     </div>
-
     <div class="nav-item" id="nav-memo" onclick="switchTab('memo')">메모</div>
     <div class="nav-item" id="nav-setting" onclick="switchTab('setting')">설정</div>
 </nav>
 
+<div id="modal-ui" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h3 style="margin:0 0 15px 0;">폴더 생성</h3>
+        <input type="text" id="modal-input" placeholder="이름 입력">
+        <div style="display:flex; gap:10px;">
+            <button class="btn-full" style="background:none;" onclick="closeModal()">취소</button>
+            <button class="btn-full" style="background:var(--accent); border:none; color:white;" onclick="handleModalConfirm()">확인</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    // 기존 로직 유지 및 UI 전환 최적화
-    let currentView = 'folder';
-    let db = JSON.parse(localStorage.getItem('cbt_v5_0_db')) || { folders: { 'root': { name: '홈', parent: null, children: [] } } };
+    const CLIENT_ID = '457447322855-c441e44d677o9ai9resofp5c8modknd3.apps.googleusercontent.com';
+    let db = JSON.parse(localStorage.getItem('cbt_v5_1_db')) || { folders: { 'root': { name: '홈', parent: null, children: [] }, 'free_memo': { name: '자유 메모', parent: 'root', children: [] } } };
+    let currentId = 'root', currentView = 'folder', editingIdx = null, tokenClient = null, userName = "";
+
+    function saveDB() { localStorage.setItem('cbt_v5_1_db', JSON.stringify(db)); }
 
     function switchTab(tab) {
         currentView = tab;
-        const container = document.getElementById('main-container');
-        
-        // 3.1 설정 뷰일 때 폭 확장
-        container.classList.toggle('setting-view', tab === 'setting');
-        
+        document.getElementById('main-container').className = 'container' + (tab === 'setting' ? ' setting-view' : '');
         document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-        document.getElementById('view-' + tab).classList.remove('hidden');
-        
+        document.getElementById('view-' + (tab === 'edit' ? 'edit' : tab)).classList.remove('hidden');
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById('nav-' + (tab === 'folder' ? 'home' : tab)).classList.add('active');
-        
+        const navId = tab === 'folder' ? 'home' : tab;
+        if(document.getElementById('nav-'+navId)) document.getElementById('nav-'+navId).classList.add('active');
+        document.getElementById('memo-header-btn').classList.toggle('hidden', tab !== 'memo');
         document.querySelectorAll('.pop-menu').forEach(p => p.style.display = 'none');
         render();
     }
 
-    // 4. 버튼 위 전사되는 팝업 로직
     function togglePop(id) {
         const target = document.getElementById(id);
         const isOpen = target.style.display === 'block';
@@ -148,21 +146,118 @@
         target.style.display = isOpen ? 'none' : 'block';
     }
 
-    // [이하 기존 렌더링, CRUD, 구글 동기화 로직은 v4.9와 동일하게 유지하되 UI 선택자만 맞춤]
-    // ... (중략: 데이터 관리 로직) ...
-
     function render() {
         if(currentView === 'folder') renderFolder();
-        else if(currentView === 'memo') renderMemoHub();
+        if(currentView === 'memo') renderMemoHub();
     }
 
-    function goHome() {
-        // 홈 버튼 클릭 시 루트 폴더로 이동 로직 포함
-        switchTab('folder');
+    function renderFolder() {
+        const list = document.getElementById('content-list');
+        list.innerHTML = (currentId !== 'root') ? `<div style="margin-bottom:15px; color:var(--accent); cursor:pointer;" onclick="goBack()">← 뒤로가기</div>` : '';
+        db.folders[currentId].children.forEach((item, idx) => {
+            const isF = item.type === 'folder', data = isF ? db.folders[item.id] : item;
+            list.innerHTML += `<div class="card-sm" onclick="${isF ? `enterFolder('${item.id}')` : `alert('상세보기는 메모 탭을 활용해주세요!')`}">
+                <div>${!isF && data.tags ? data.tags.split(' ').map(t => `<span class="tag-badge">${t}</span>`).join('') : ''} ${data.name || data.text}</div>
+                <div onclick="event.stopPropagation(); deleteItem(${idx})" style="color:var(--wrong); font-size:12px;">삭제</div>
+            </div>`;
+        });
     }
 
-    // 초기화 및 구글 연동 등
-    window.onload = () => { render(); switchTab('folder'); };
+    function renderMemoHub() {
+        const list = document.getElementById('memo-list'); list.innerHTML = '';
+        Object.values(db.folders).forEach(f => {
+            f.children.forEach(item => {
+                if(item.type === 'question' && item.note) {
+                    list.innerHTML += `<div class="card-lg">
+                        <div style="font-weight:700; color:var(--accent);">${item.text}</div>
+                        <div style="margin:5px 0;">${item.tags ? item.tags.split(' ').map(t => `<span class="tag-badge">${t}</span>`).join('') : ''}</div>
+                        <div class="memo-body">${item.note}</div>
+                    </div>`;
+                }
+            });
+        });
+    }
+
+    function showAddQuestion() { 
+        editingIdx = null; switchTab('edit'); 
+        document.getElementById('edit-title').innerText = "문제 추가";
+        document.getElementById('opts-area').classList.remove('hidden');
+    }
+
+    function showAddMemo() { 
+        editingIdx = null; switchTab('edit'); 
+        document.getElementById('edit-title').innerText = "자유 메모 작성";
+        document.getElementById('opts-area').classList.add('hidden');
+    }
+
+    function saveItem() {
+        const isMemo = document.getElementById('opts-area').classList.contains('hidden');
+        const q = {
+            type: 'question',
+            text: document.getElementById('q-text').value,
+            tags: document.getElementById('q-tags').value,
+            note: document.getElementById('q-note').value,
+            opts: isMemo ? [] : [1,2,3,4,5].map(i => document.getElementById('q-opt'+i).value),
+            ans: isMemo ? -1 : parseInt(document.getElementById('q-ans').value) - 1
+        };
+        const targetId = isMemo ? 'free_memo' : currentId;
+        db.folders[targetId].children.push(q);
+        saveDB(); switchTab(isMemo ? 'memo' : 'folder');
+    }
+
+    function enterFolder(id) { currentId = id; render(); }
+    function goBack() { currentId = db.folders[currentId].parent; render(); }
+    function goHome() { currentId = 'root'; switchTab('folder'); }
+    function toggleTheme() { document.body.classList.toggle('light-mode'); }
+    function openModal() { document.getElementById('modal-ui').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('modal-ui').classList.add('hidden'); }
+    function handleModalConfirm() {
+        const val = document.getElementById('modal-input').value.trim();
+        if(val) {
+            const id = 'f'+Date.now();
+            db.folders[id] = {name:val, parent:currentId, children:[]};
+            db.folders[currentId].children.push({type:'folder', id});
+            saveDB(); render();
+        }
+        closeModal();
+    }
+    function deleteItem(idx) { if(confirm("삭제?")) { db.folders[currentId].children.splice(idx,1); saveDB(); render(); } }
+
+    // 구글 동기화
+    function gInit() {
+        gapi.load('client', async () => { await gapi.client.init({ discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"] }); });
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID, scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile',
+            callback: async (res) => {
+                const info = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${res.access_token}` } }).then(r => r.json());
+                userName = info.name; document.getElementById('user-info').innerText = `연결됨: ${userName}님`;
+                document.getElementById('auth-btn').classList.add('hidden'); document.getElementById('sync-controls').classList.remove('hidden');
+            }
+        });
+    }
+    function handleAuthClick() { tokenClient.requestAccessToken(); }
+    async function syncToDrive() {
+        try {
+            const list = await gapi.client.drive.files.list({q:"name='My_CBT_Backup' and mimeType='application/vnd.google-apps.folder' and trashed=false"});
+            let fid = list.result.files.length ? list.result.files[0].id : (await gapi.client.drive.files.create({resource:{name:'My_CBT_Backup', mimeType:'application/vnd.google-apps.folder'}, fields:'id'})).result.id;
+            const now = new Date(); const ds = `${now.getFullYear().toString().slice(2)}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}`;
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify({name:`${userName}_CBT_BK_${ds}.json`, parents:[fid]})], {type:'application/json'}));
+            form.append('file', new Blob([JSON.stringify(db)], {type:'application/json'}));
+            await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {method:'POST', headers:{'Authorization':`Bearer ${gapi.client.getToken().access_token}`}, body:form});
+            alert("백업 성공");
+        } catch(e) { alert("실패"); }
+    }
+    async function pullFromDrive() {
+        try {
+            const list = await gapi.client.drive.files.list({q:"name='My_CBT_Backup' and trashed=false"});
+            const files = await gapi.client.drive.files.list({q:`'${list.result.files[0].id}' in parents and trashed=false`, orderBy:"createdTime desc", pageSize:1});
+            const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${files.result.files[0].id}?alt=media`, {headers:{'Authorization':`Bearer ${gapi.client.getToken().access_token}`}});
+            db = await resp.json(); saveDB(); alert("복구 성공"); render();
+        } catch(e) { alert("실패"); }
+    }
+
+    window.onload = () => { gInit(); switchTab('folder'); };
 </script>
 </body>
 </html>
