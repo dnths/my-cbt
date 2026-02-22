@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>CBT Master v6.7</title>
+    <title>CBT Master v6.8</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
@@ -40,15 +40,12 @@
 <body class="dark-mode">
 
 <div id="launcher">
-    <div style="margin-bottom: 30px; font-weight: 800; opacity: 0.6; font-size: 1.5rem;">CBT MASTER v6.7</div>
+    <div style="margin-bottom: 30px; font-weight: 800; opacity: 0.6; font-size: 1.5rem;">CBT MASTER v6.8</div>
     <div class="launcher-btn" onclick="enterMode('note')">📚 오답 노트</div>
     <div class="launcher-btn" onclick="enterMode('memo')">📝 메모 허브</div>
 </div>
 
-<header>
-    <div class="logo">CBT MASTER</div>
-    <div id="mode-indicator" style="font-size: 0.8rem; font-weight: 700; color: var(--accent);"></div>
-</header>
+<header><div class="logo">CBT MASTER</div><div id="mode-indicator" style="font-size: 0.8rem; font-weight: 700; color: var(--accent);"></div></header>
 
 <div id="main-container" class="container">
     <div id="view-folder" class="view hidden"><div id="content-list"></div></div>
@@ -78,6 +75,8 @@
             <button class="btn-full" onclick="syncToDrive()">내 데이터를 드라이브로 (Push)</button>
             <button class="btn-full" onclick="pullFromDrive()" style="background:#555;">드라이브 데이터를 이 기기로 (Pull)</button>
         </div>
+        <h3 style="margin-top:30px;">화면 설정</h3>
+        <button class="btn-full" style="background: var(--card); border: 1px solid var(--border);" onclick="toggleTheme()">다크/라이트 모드 전환</button>
     </div>
 </div>
 
@@ -88,75 +87,83 @@
     const CLIENT_ID = '457447322855-c441e44d677o9ai9resofp5c8modknd3.apps.googleusercontent.com';
     const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
     const SCOPES = 'https://www.googleapis.com/auth/drive.file';
-    const BACKUP_FILE_NAME = "cbt_master_v6_backup.json"; // 고정 파일명
+    const BACKUP_FOLDER_NAME = "My-CBT-Backup";
+    const BACKUP_FILE_NAME = "cbt_v6_backup.json";
 
     let db = JSON.parse(localStorage.getItem('cbt_v6_db')) || { folders: { 'root': { name: '홈', parent: null, children: [] }, 'free_memo': { name: '자유 메모', parent: 'root', children: [] } } };
     let currentId = 'root', appMode = '', quizQueue = [], quizIdx = 0, editingItem = null, tokenClient;
 
     function saveDB() { localStorage.setItem('cbt_v6_db', JSON.stringify(db)); }
 
-    // --- 동기화 로직 수리 ---
+    // --- 렌더링 통합 함수 (중요!) ---
+    function render() {
+        const currentView = document.querySelector('.view:not(.hidden)');
+        if(!currentView) return;
+        if(currentView.id === 'view-folder') renderFolder();
+        if(currentView.id === 'view-memo') renderMemoHub();
+    }
+
+    // --- 동기화 로직 ---
     function gInit() {
         gapi.load('client', async () => { await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS }); });
         tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: CLIENT_ID, scope: SCOPES,
             callback: (res) => {
                 if (res.error) return;
-                document.getElementById('user-info').innerText = "연결됨: 동기화 가능";
+                document.getElementById('user-info').innerText = "연결됨: My-CBT-Backup 폴더 사용";
                 document.getElementById('auth-btn').classList.add('hidden');
                 document.getElementById('sync-controls').classList.remove('hidden');
             }
         });
     }
 
+    async function getOrCreateFolder() {
+        const res = await gapi.client.drive.files.list({ q: `name='${BACKUP_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false` });
+        if (res.result.files.length > 0) return res.result.files[0].id;
+        const folderMetadata = { name: BACKUP_FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' };
+        const newFolder = await gapi.client.drive.files.create({ resource: folderMetadata, fields: 'id' });
+        return newFolder.result.id;
+    }
+
     async function syncToDrive() {
         try {
-            // 1. 파일이 이미 있는지 검색
-            const listRes = await gapi.client.drive.files.list({ q: `name='${BACKUP_FILE_NAME}' and trashed=false`, fields: 'files(id)' });
+            const folderId = await getOrCreateFolder();
+            const listRes = await gapi.client.drive.files.list({ q: `name='${BACKUP_FILE_NAME}' and '${folderId}' in parents and trashed=false` });
             const files = listRes.result.files;
             const content = JSON.stringify(db);
             const accessToken = gapi.auth.getToken().access_token;
 
             if (files.length > 0) {
-                // 2. 파일이 있으면 업데이트 (PATCH)
-                const fileId = files[0].id;
-                await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+                await fetch(`https://www.googleapis.com/upload/drive/v3/files/${files[0].id}?uploadType=media`, {
                     method: 'PATCH', headers: { Authorization: `Bearer ${accessToken}` }, body: content
                 });
-                alert("기존 백업 파일에 덮어쓰기 완료!");
             } else {
-                // 3. 파일이 없으면 생성 (Multipart POST)
-                const metadata = { name: BACKUP_FILE_NAME, mimeType: 'application/json' };
+                const metadata = { name: BACKUP_FILE_NAME, parents: [folderId], mimeType: 'application/json' };
                 const form = new FormData();
                 form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
                 form.append('file', new Blob([content], { type: 'application/json' }));
                 await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
                     method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body: form
                 });
-                alert("새로운 백업 파일이 생성되었습니다!");
             }
-        } catch (e) { alert("백업 실패: " + e.message); console.error(e); }
+            alert("My-CBT-Backup 폴더에 백업 완료!");
+        } catch (e) { alert("오류: " + e.message); }
     }
 
     async function pullFromDrive() {
         try {
             const listRes = await gapi.client.drive.files.list({ q: `name='${BACKUP_FILE_NAME}' and trashed=false`, fields: 'files(id)' });
-            const files = listRes.result.files;
-            if (files.length === 0) return alert("드라이브에 백업 파일이 없습니다. (파일명: " + BACKUP_FILE_NAME + ")");
-            
-            const fileId = files[0].id;
+            if (listRes.result.files.length === 0) return alert("백업 파일을 찾을 수 없습니다.");
+            const fileId = listRes.result.files[0].id;
             const dataRes = await gapi.client.drive.files.get({ fileId: fileId, alt: 'media' });
-            
-            if (dataRes.result) {
-                db = dataRes.result; saveDB(); render();
-                alert("드라이브에서 데이터를 성공적으로 가져왔습니다!");
-            }
-        } catch (e) { alert("데이터 가져오기 실패: " + e.message); }
+            db = dataRes.result; saveDB(); render();
+            alert("동기화 완료!");
+        } catch (e) { alert("실패: " + e.message); }
     }
 
     function handleAuthClick() { tokenClient.requestAccessToken({prompt: 'consent'}); }
 
-    // --- 기본 앱 기능 ---
+    // --- 기본 기능 ---
     function enterMode(mode) {
         appMode = mode; document.getElementById('launcher').classList.add('hidden');
         document.getElementById('nav-bar').classList.remove('hidden');
@@ -213,8 +220,8 @@
 
     function showAddQuestion() { editingItem = null; document.getElementById('edit-title').innerText="문제 추가"; document.getElementById('opts-area').classList.remove('hidden'); switchTab('edit'); }
     function showAddMemo() { editingItem = null; document.getElementById('edit-title').innerText="메모 작성"; document.getElementById('opts-area').classList.add('hidden'); switchTab('edit'); }
-    function editQuestion(idx) { editingItem = { fId: currentId, idx: idx }; fillEditForm(db.folders[currentId].children[idx], "문제 수정", false); }
-    function editMemoFromHub(idx) { editingItem = { fId: 'free_memo', idx: idx }; fillEditForm(db.folders['free_memo'].children[idx], "메모 수정", true); }
+    function editQuestion(idx) { editingItem = { fId: currentId, idx: idx }; fillEditForm(db.folders[currentId].children[idx], "수정", false); }
+    function editMemoFromHub(idx) { editingItem = { fId: 'free_memo', idx: idx }; fillEditForm(db.folders['free_memo'].children[idx], "수정", true); }
 
     function fillEditForm(q, title, isMemo) {
         document.getElementById('edit-title').innerText = title;
@@ -227,7 +234,7 @@
     function saveItem() {
         const isMemoPage = document.getElementById('opts-area').classList.contains('hidden');
         const text = document.getElementById('q-text').value, note = document.getElementById('q-note').value, tags = document.getElementById('q-tags').value;
-        if(!text) return alert("내용 입력!");
+        if(!text) return alert("내용을 입력하세요.");
         const item = { type:'question', text, note, tags, opts: isMemoPage ? [] : [1,2,3,4,5].map(i => document.getElementById('q-opt'+i).value), ans: isMemoPage ? -1 : parseInt(document.getElementById('q-ans').value) };
         if(editingItem) db.folders[editingItem.fId].children[editingItem.idx] = item;
         else {
@@ -240,7 +247,7 @@
 
     function startQuiz(isShuffle) {
         quizQueue = db.folders[currentId].children.filter(item => item.type === 'question' && item.ans !== -1);
-        if(quizQueue.length === 0) return alert("문제 없음");
+        if(quizQueue.length === 0) return alert("문제가 없습니다.");
         if(isShuffle) quizQueue.sort(() => Math.random() - 0.5);
         quizIdx = 0; switchTab('quiz'); showQuiz();
     }
@@ -265,12 +272,17 @@
     function closeModal() { document.getElementById('modal-folder').classList.add('hidden'); }
     function confirmCreateFolder() {
         const name = document.getElementById('folder-input').value;
-        if(name) { const id = 'f' + Date.now(); db.folders[id] = { name, parent: currentId, children: [] }; db.folders[currentId].children.push({ type: 'folder', id }); saveDB(); render(); }
+        if(name) { 
+            const id = 'f' + Date.now(); 
+            db.folders[id] = { name, parent: currentId, children: [] }; 
+            db.folders[currentId].children.push({ type: 'folder', id }); 
+            saveDB(); render(); 
+        }
         closeModal();
     }
     function editFolderName(id) { const n = prompt("이름:", db.folders[id].name); if(n) { db.folders[id].name = n; saveDB(); render(); } }
     function deleteItem(idx) { if(confirm("삭제?")) { db.folders[currentId].children.splice(idx,1); saveDB(); render(); } }
-    function deleteMemoItem(idx) { if(confirm("삭제?")) { db.folders['free_memo'].children.splice(idx,1); saveDB(); renderMemoHub(); } }
+    function deleteMemoItem(idx) { if(confirm("삭제?")) { db.folders['free_memo'].children.splice(idx,1); saveDB(); render(); } }
     function toggleTheme() { document.body.classList.toggle('light-mode'); }
 
     window.onload = gInit;
