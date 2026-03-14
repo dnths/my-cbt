@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>CBT Master v6.9</title>
+    <title>CBT Master v6.9.1</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
@@ -46,7 +46,7 @@
 <body class="dark-mode">
 
 <div id="launcher">
-    <div style="margin-bottom: 30px; font-weight: 800; opacity: 0.6; font-size: 1.5rem;">CBT MASTER v6.9</div>
+    <div style="margin-bottom: 30px; font-weight: 800; opacity: 0.6; font-size: 1.5rem;">CBT MASTER v6.9.1</div>
     <div class="launcher-btn" onclick="enterMode('note')">📚 오답 노트</div>
     <div class="launcher-btn" onclick="enterMode('memo')">📝 메모 허브</div>
 </div>
@@ -55,9 +55,9 @@
 
 <div id="main-container" class="container">
     <div id="view-folder" class="view hidden">
-        <div class="sort-bar" id="folder-sort-bar">
-            <div class="sort-btn active" onclick="setSort('name')">이름순</div>
-            <div class="sort-btn" onclick="setSort('date')">최신순</div>
+        <div class="sort-bar">
+            <div id="sort-name" class="sort-btn active" onclick="setSort('name')">이름순</div>
+            <div id="sort-date" class="sort-btn" onclick="setSort('date')">최신순</div>
         </div>
         <div id="content-list"></div>
     </div>
@@ -78,7 +78,7 @@
             <input type="text" id="q-opt1" placeholder="1번"><input type="text" id="q-opt2" placeholder="2번"><input type="text" id="q-opt3" placeholder="3번"><input type="text" id="q-opt4" placeholder="4번"><input type="text" id="q-opt5" placeholder="5번">
             <input type="number" id="q-ans" placeholder="정답 번호 (1~5)">
         </div>
-        <input type="text" id="q-tags" placeholder="태그 (#해시태그)"><textarea id="q-note" placeholder="해설" rows="8"></textarea>
+        <input type="text" id="q-tags" placeholder="태그 (#태그)"><textarea id="q-note" placeholder="해설" rows="8"></textarea>
         <button class="btn-full" onclick="saveItem()">저장 완료</button>
     </div>
 
@@ -121,6 +121,14 @@
 
     function saveDB() { localStorage.setItem('cbt_v6_db', JSON.stringify(db)); }
 
+    // 모든 탭 전환 시 팝업 닫기 포함
+    function switchTab(tab) {
+        document.querySelectorAll('.pop-menu').forEach(p => p.style.display = 'none');
+        document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+        document.getElementById('view-' + tab).classList.remove('hidden');
+        render();
+    }
+
     function render() {
         const currentView = document.querySelector('.view:not(.hidden)');
         if(!currentView) return;
@@ -128,7 +136,7 @@
         if(currentView.id === 'view-memo') renderMemoHub();
     }
 
-    // --- 동기화 ---
+    // --- 동기화 로직 ---
     function gInit() {
         gapi.load('client', async () => { await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS }); });
         tokenClient = google.accounts.oauth2.initTokenClient({
@@ -183,7 +191,22 @@
         } catch (e) { alert("실패: " + e.message); }
     }
 
-    // --- 기본 기능 ---
+    // --- 통계 및 정렬 기능 ---
+    function ensureStats(item) {
+        if (item.type === 'question' && item.ans !== -1) {
+            if (item.solveCount === undefined) item.solveCount = 0;
+            if (item.correctCount === undefined) item.correctCount = 0;
+        }
+    }
+
+    function setSort(type) {
+        currentSort = type;
+        document.getElementById('sort-name').classList.toggle('active', type === 'name');
+        document.getElementById('sort-date').classList.toggle('active', type === 'date');
+        renderFolder();
+    }
+
+    // --- 메인 렌더링 ---
     function enterMode(mode) {
         appMode = mode; document.getElementById('launcher').classList.add('hidden');
         document.getElementById('nav-bar').classList.remove('hidden');
@@ -194,7 +217,7 @@
     function renderNavBar() {
         const nav = document.getElementById('nav-bar');
         if(appMode === 'note') {
-            nav.innerHTML = `<div class="nav-item" onclick="goHome()">홈</div><div class="nav-item" onclick="togglePop('pop-add')">생성<div id="pop-add" class="pop-menu"><div onclick="openModal(); closePop('pop-add');">폴더 생성</div><div onclick="showAddQuestion(); closePop('pop-add');">문제 추가</div></div></div><div class="nav-item" onclick="togglePop('pop-quiz')">풀이<div id="pop-quiz" class="pop-menu"><div onclick="startQuiz(false); closePop('pop-quiz');">순서대로</div><div onclick="startQuiz(true); closePop('pop-quiz');">섞어서</div></div></div><div class="nav-item" onclick="switchTab('setting')">설정</div>`;
+            nav.innerHTML = `<div class="nav-item" onclick="goHome()">홈</div><div class="nav-item" onclick="togglePop('pop-add')">생성<div id="pop-add" class="pop-menu"><div onclick="openModal()">폴더 생성</div><div onclick="showAddQuestion()">문제 추가</div></div></div><div class="nav-item" onclick="togglePop('pop-quiz')">풀이<div id="pop-quiz" class="pop-menu"><div onclick="startQuiz(false)">순서대로</div><div onclick="startQuiz(true)">섞어서</div></div></div><div class="nav-item" onclick="switchTab('setting')">설정</div>`;
         } else {
             nav.innerHTML = `<div class="nav-item" onclick="goHome()">홈</div><div class="nav-item" onclick="showAddMemo()">생성</div><div class="nav-item" onclick="togglePop('pop-search')">검색<div id="pop-search" class="pop-menu" style="width:250px; padding:10px;"><input type="text" id="tag-search" placeholder="검색..." oninput="renderMemoHub()" style="margin:0;"></div></div><div class="nav-item" onclick="switchTab('setting')">설정</div>`;
         }
@@ -206,41 +229,19 @@
         document.querySelectorAll('.pop-menu').forEach(p => p.style.display = 'none');
         if(!isOpen) target.style.display = 'block';
     }
-    function closePop(id) { document.getElementById(id).style.display = 'none'; }
-
-    function switchTab(tab) {
-        document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-        document.getElementById('view-' + tab).classList.remove('hidden');
-        render();
-    }
-
-    // 정렬 로직
-    function setSort(type) {
-        currentSort = type;
-        document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
-        event.target.classList.add('active');
-        renderFolder();
-    }
 
     function renderFolder() {
         const list = document.getElementById('content-list');
         list.innerHTML = (currentId !== 'root') ? `<div class="back-link" onclick="goBack()">← 뒤로가기</div>` : '';
-        
-        let children = [...db.folders[currentId].children];
-        
-        // 정렬 적용
+        let items = [...db.folders[currentId].children];
         if(currentSort === 'name') {
-            children.sort((a, b) => {
-                const nameA = a.type === 'folder' ? db.folders[a.id].name : a.text;
-                const nameB = b.type === 'folder' ? db.folders[b.id].name : b.text;
-                return nameA.localeCompare(nameB);
+            items.sort((a, b) => {
+                const nA = a.type === 'folder' ? db.folders[a.id].name : a.text;
+                const nB = b.type === 'folder' ? db.folders[b.id].name : b.text;
+                return nA.localeCompare(nB);
             });
-        } else {
-            // date 정렬 (기본 배열 순서가 생성순이므로 뒤집기)
-            children.reverse();
-        }
-
-        children.forEach((item, idx) => {
+        } else { items.reverse(); }
+        items.forEach((item) => {
             const isF = item.type === 'folder', data = isF ? db.folders[item.id] : item;
             list.innerHTML += `<div class="card-sm" onclick="${isF ? `enterFolder('${item.id}')` : `viewDetail(${db.folders[currentId].children.indexOf(item)})`}" style="cursor:pointer;">
                 ${!isF && data.tags ? `<span style="color:var(--accent); font-size:11px; display:block;">${data.tags}</span>` : ''}
@@ -251,23 +252,22 @@
 
     function viewDetail(idx) {
         const item = db.folders[currentId].children[idx];
-        const detail = document.getElementById('detail-content');
-        const actions = document.getElementById('detail-actions');
-        
-        detail.innerHTML = `
-            <div style="color:var(--accent); font-size:12px; margin-bottom:10px;">${item.tags || '#태그없음'}</div>
+        ensureStats(item);
+        const rate = item.solveCount > 0 ? Math.round((item.correctCount / item.solveCount) * 100) : 0;
+        document.getElementById('detail-content').innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div style="color:var(--accent); font-size:12px;">${item.tags || '#태그없음'}</div>
+                <div style="font-size:11px; opacity:0.6;">정답률: ${rate}% (${item.correctCount}/${item.solveCount})</div>
+            </div>
             <h3 class="pre-wrap">${item.text}</h3>
-            ${item.opts && item.opts[0] ? `<div style="margin:15px 0; opacity:0.8;">${item.opts.map((o,i)=>o?`<div>${i+1}. ${o}</div>`:'').join('')}</div>` : ''}
+            ${item.opts && item.opts[0] ? `<div style="margin:15px 0; opacity:0.8; font-size:0.95rem;">${item.opts.map((o,i)=>o?`<div>${i+1}. ${o}</div>`:'').join('')}</div>` : ''}
             <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
                 <b style="color:var(--correct)">정답: ${item.ans}번</b>
                 <div class="pre-wrap" style="margin-top:10px; opacity:0.9;">${item.note || '해설 없음'}</div>
-            </div>
-        `;
-        
-        actions.innerHTML = `
-            <button class="btn-full btn-edit" style="flex:1" onclick="editQuestion(${idx})">수정하기</button>
-            <button class="btn-full btn-del" style="flex:1" onclick="deleteItem(${idx})">삭제하기</button>
-        `;
+            </div>`;
+        document.getElementById('detail-actions').innerHTML = `
+            <button class="btn-full btn-edit" style="flex:1" onclick="editQuestion(${idx})">수정</button>
+            <button class="btn-full btn-del" style="flex:1" onclick="deleteItem(${idx})">삭제</button>`;
         switchTab('detail');
     }
 
@@ -279,43 +279,16 @@
                 list.innerHTML += `<div class="card-lg">
                     <div style="color:var(--accent); font-size:12px; font-weight:700;">${item.tags || '#메모'}</div>
                     <b style="font-size:1.1rem;">${item.text}</b>
-                    <div class="pre-wrap" style="margin-top:12px; opacity:0.8; font-size:0.95rem; line-height:1.6;">${item.note || '(내용 없음)'}</div>
+                    <div class="pre-wrap" style="margin-top:12px; opacity:0.8; font-size:0.95rem;">${item.note || '(내용 없음)'}</div>
                     <div style="text-align:right; margin-top:15px;">
                         <button class="action-btn btn-edit" onclick="editMemoFromHub(${idx})">수정</button>
                         <button class="action-btn btn-del" onclick="deleteMemoItem(${idx})">삭제</button>
-                    </div>
-                </div>`;
+                    </div></div>`;
             }
         });
     }
 
-    function showAddQuestion() { editingItem = null; document.getElementById('edit-title').innerText="문제 추가"; document.getElementById('opts-area').classList.remove('hidden'); switchTab('edit'); }
-    function showAddMemo() { editingItem = null; document.getElementById('edit-title').innerText="메모 작성"; document.getElementById('opts-area').classList.add('hidden'); switchTab('edit'); }
-    function editQuestion(idx) { editingItem = { fId: currentId, idx: idx }; fillEditForm(db.folders[currentId].children[idx], "수정", false); }
-    function editMemoFromHub(idx) { editingItem = { fId: 'free_memo', idx: idx }; fillEditForm(db.folders['free_memo'].children[idx], "수정", true); }
-
-    function fillEditForm(q, title, isMemo) {
-        document.getElementById('edit-title').innerText = title;
-        document.getElementById('q-text').value = q.text; document.getElementById('q-note').value = q.note || ''; document.getElementById('q-tags').value = q.tags || '';
-        if(!isMemo) { document.getElementById('opts-area').classList.remove('hidden'); q.opts.forEach((opt, i) => document.getElementById('q-opt'+(i+1)).value = opt); document.getElementById('q-ans').value = q.ans; }
-        else { document.getElementById('opts-area').classList.add('hidden'); }
-        switchTab('edit');
-    }
-
-    function saveItem() {
-        const isMemoPage = document.getElementById('opts-area').classList.contains('hidden');
-        const text = document.getElementById('q-text').value, note = document.getElementById('q-note').value, tags = document.getElementById('q-tags').value;
-        if(!text) return alert("내용을 입력하세요.");
-        const item = { type:'question', text, note, tags, opts: isMemoPage ? [] : [1,2,3,4,5].map(i => document.getElementById('q-opt'+i).value), ans: isMemoPage ? -1 : parseInt(document.getElementById('q-ans').value) };
-        if(editingItem) db.folders[editingItem.fId].children[editingItem.idx] = item;
-        else {
-            if(isMemoPage) db.folders['free_memo'].children.push(item);
-            else { db.folders[currentId].children.push(item); if(note.trim()!=="") db.folders['free_memo'].children.push({ type:'question', text: `[해설] ${text}`, note, tags, opts:[], ans:-1 }); }
-        }
-        saveDB(); document.querySelectorAll('#view-edit input, #view-edit textarea').forEach(i => i.value='');
-        switchTab(isMemoPage ? 'memo' : 'folder');
-    }
-
+    // --- 문제 풀이 로직 ---
     function startQuiz(isShuffle) {
         quizQueue = db.folders[currentId].children.filter(item => item.type === 'question' && item.ans !== -1);
         if(quizQueue.length === 0) return alert("문제가 없습니다.");
@@ -332,28 +305,48 @@
     }
     function checkAnswer(ans) {
         const q = quizQueue[quizIdx]; 
-        const fb = document.getElementById('quiz-feedback');
-        
+        ensureStats(q); q.solveCount++;
         document.querySelectorAll('.btn-opt').forEach(b => b.disabled = true);
-        
         const correctBtn = document.getElementById(`opt-${q.ans}`);
         const myBtn = document.getElementById(`opt-${ans}`);
-        
         correctBtn.classList.add('correct');
         if(ans !== q.ans) {
             myBtn.classList.add('wrong');
-            fb.innerHTML = `<b style="color:var(--wrong)">오답입니다!</b><br><br>${q.note || ''}`;
+            document.getElementById('quiz-feedback').innerHTML = `<b style="color:var(--wrong)">오답입니다!</b><br><br>${q.note || ''}`;
         } else {
-            fb.innerHTML = `<b style="color:var(--correct)">정답입니다! 🎉</b><br><br>${q.note || ''}`;
+            q.correctCount++;
+            document.getElementById('quiz-feedback').innerHTML = `<b style="color:var(--correct)">정답입니다! 🎉</b><br><br>${q.note || ''}`;
         }
-        
-        fb.classList.remove('hidden'); 
+        saveDB();
+        document.getElementById('quiz-feedback').classList.remove('hidden'); 
         document.getElementById('quiz-next-btn').classList.remove('hidden');
     }
-    function nextQuiz() { 
-        quizIdx++; 
-        if(quizIdx < quizQueue.length) showQuiz(); 
-        else { alert("학습을 완료했습니다!"); switchTab('folder'); } 
+    function nextQuiz() { quizIdx++; if(quizIdx < quizQueue.length) showQuiz(); else { alert("학습 완료!"); switchTab('folder'); } }
+
+    // --- 기타 기능 ---
+    function showAddQuestion() { editingItem = null; document.getElementById('edit-title').innerText="문제 추가"; document.getElementById('opts-area').classList.remove('hidden'); switchTab('edit'); }
+    function showAddMemo() { editingItem = null; document.getElementById('edit-title').innerText="메모 작성"; document.getElementById('opts-area').classList.add('hidden'); switchTab('edit'); }
+    function editQuestion(idx) { editingItem = { fId: currentId, idx: idx }; fillEditForm(db.folders[currentId].children[idx], "수정", false); }
+    function editMemoFromHub(idx) { editingItem = { fId: 'free_memo', idx: idx }; fillEditForm(db.folders['free_memo'].children[idx], "수정", true); }
+    function fillEditForm(q, title, isMemo) {
+        document.getElementById('edit-title').innerText = title;
+        document.getElementById('q-text').value = q.text; document.getElementById('q-note').value = q.note || ''; document.getElementById('q-tags').value = q.tags || '';
+        if(!isMemo) { document.getElementById('opts-area').classList.remove('hidden'); q.opts.forEach((opt, i) => document.getElementById('q-opt'+(i+1)).value = opt); document.getElementById('q-ans').value = q.ans; }
+        else { document.getElementById('opts-area').classList.add('hidden'); }
+        switchTab('edit');
+    }
+    function saveItem() {
+        const isMemoPage = document.getElementById('opts-area').classList.contains('hidden');
+        const text = document.getElementById('q-text').value, note = document.getElementById('q-note').value, tags = document.getElementById('q-tags').value;
+        if(!text) return alert("내용을 입력하세요.");
+        const item = { type:'question', text, note, tags, opts: isMemoPage ? [] : [1,2,3,4,5].map(i => document.getElementById('q-opt'+i).value), ans: isMemoPage ? -1 : parseInt(document.getElementById('q-ans').value) };
+        if(editingItem) db.folders[editingItem.fId].children[editingItem.idx] = item;
+        else {
+            if(isMemoPage) db.folders['free_memo'].children.push(item);
+            else { db.folders[currentId].children.push(item); if(note.trim()!=="") db.folders['free_memo'].children.push({ type:'question', text: `[해설] ${text}`, note, tags, opts:[], ans:-1 }); }
+        }
+        saveDB(); document.querySelectorAll('#view-edit input, #view-edit textarea').forEach(i => i.value='');
+        switchTab(isMemoPage ? 'memo' : 'folder');
     }
     function cancelEdit() { switchTab(appMode === 'note' ? 'folder' : 'memo'); }
     function goBack() { currentId = db.folders[currentId].parent; render(); }
