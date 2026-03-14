@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>CBT Master v6.8</title>
+    <title>CBT Master v6.9</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
@@ -30,9 +30,15 @@
         .back-link { display: inline-block; margin-bottom: 15px; color: var(--accent); font-weight: 700; cursor: pointer; }
         input, textarea { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); color: var(--text); box-sizing: border-box; font-family: inherit; }
         .btn-full { width: 100%; padding: 16px; border-radius: 10px; border: none; background: var(--accent); color: white; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        .btn-opt { width: 100%; padding: 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); text-align: left; margin-top: 8px; cursor: pointer; }
+        .btn-opt.correct { border-color: var(--correct); background: rgba(76, 175, 80, 0.1); color: var(--correct); font-weight: 800; }
+        .btn-opt.wrong { border-color: var(--wrong); background: rgba(244, 67, 54, 0.1); color: var(--wrong); }
         #launcher { position: fixed; inset: 0; background: var(--bg); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .launcher-btn { width: 85%; max-width: 300px; padding: 40px 20px; margin: 10px; border-radius: 20px; background: var(--card); border: 1px solid var(--border); font-size: 1.1rem; font-weight: 800; text-align: center; cursor: pointer; color: var(--text); }
         .pre-wrap { white-space: pre-wrap; word-break: break-all; }
+        .sort-bar { display: flex; gap: 10px; margin-bottom: 15px; font-size: 0.8rem; }
+        .sort-btn { padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border); cursor: pointer; opacity: 0.7; }
+        .sort-btn.active { border-color: var(--accent); color: var(--accent); opacity: 1; }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 4000; }
         .modal-content { background: var(--card); width: 85%; max-width: 400px; border-radius: 16px; padding: 30px; }
     </style>
@@ -40,7 +46,7 @@
 <body class="dark-mode">
 
 <div id="launcher">
-    <div style="margin-bottom: 30px; font-weight: 800; opacity: 0.6; font-size: 1.5rem;">CBT MASTER v6.8</div>
+    <div style="margin-bottom: 30px; font-weight: 800; opacity: 0.6; font-size: 1.5rem;">CBT MASTER v6.9</div>
     <div class="launcher-btn" onclick="enterMode('note')">📚 오답 노트</div>
     <div class="launcher-btn" onclick="enterMode('memo')">📝 메모 허브</div>
 </div>
@@ -48,25 +54,45 @@
 <header><div class="logo">CBT MASTER</div><div id="mode-indicator" style="font-size: 0.8rem; font-weight: 700; color: var(--accent);"></div></header>
 
 <div id="main-container" class="container">
-    <div id="view-folder" class="view hidden"><div id="content-list"></div></div>
+    <div id="view-folder" class="view hidden">
+        <div class="sort-bar" id="folder-sort-bar">
+            <div class="sort-btn active" onclick="setSort('name')">이름순</div>
+            <div class="sort-btn" onclick="setSort('date')">최신순</div>
+        </div>
+        <div id="content-list"></div>
+    </div>
+    
+    <div id="view-detail" class="view hidden">
+        <div class="back-link" onclick="switchTab('folder')">← 뒤로가기</div>
+        <div id="detail-content" class="card-lg"></div>
+        <div id="detail-actions" style="display:flex; gap:10px;"></div>
+    </div>
+
     <div id="view-memo" class="view hidden"><div id="memo-list"></div></div>
+    
     <div id="view-edit" class="view hidden">
         <div class="back-link" onclick="cancelEdit()">← 취소</div>
         <h2 id="edit-title">작성</h2>
         <textarea id="q-text" placeholder="내용" rows="3"></textarea>
         <div id="opts-area">
             <input type="text" id="q-opt1" placeholder="1번"><input type="text" id="q-opt2" placeholder="2번"><input type="text" id="q-opt3" placeholder="3번"><input type="text" id="q-opt4" placeholder="4번"><input type="text" id="q-opt5" placeholder="5번">
-            <input type="number" id="q-ans" placeholder="정답 번호">
+            <input type="number" id="q-ans" placeholder="정답 번호 (1~5)">
         </div>
-        <input type="text" id="q-tags" placeholder="태그"><textarea id="q-note" placeholder="해설" rows="8"></textarea>
+        <input type="text" id="q-tags" placeholder="태그 (#해시태그)"><textarea id="q-note" placeholder="해설" rows="8"></textarea>
         <button class="btn-full" onclick="saveItem()">저장 완료</button>
     </div>
+
     <div id="view-quiz" class="view hidden">
         <div class="back-link" onclick="switchTab('folder')">← 중단</div>
-        <div id="quiz-progress" style="text-align:right; font-weight:700;"></div>
-        <div class="card-lg"><h3 id="quiz-question"></h3><div id="quiz-options"></div><div id="quiz-feedback" class="hidden pre-wrap" style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);"></div></div>
-        <button id="quiz-next-btn" class="btn-full hidden" onclick="nextQuiz()">다음</button>
+        <div id="quiz-progress" style="text-align:right; font-weight:700; color:var(--accent); margin-bottom:10px;"></div>
+        <div class="card-lg">
+            <h3 id="quiz-question" class="pre-wrap"></h3>
+            <div id="quiz-options"></div>
+            <div id="quiz-feedback" class="hidden pre-wrap" style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);"></div>
+        </div>
+        <button id="quiz-next-btn" class="btn-full hidden" onclick="nextQuiz()">다음 문제</button>
     </div>
+
     <div id="view-setting" class="view hidden">
         <h3>클라우드 동기화</h3>
         <div id="user-info" style="margin-bottom:15px; font-size:0.9rem; color:var(--sub-text);">연결 전</div>
@@ -91,11 +117,10 @@
     const BACKUP_FILE_NAME = "cbt_v6_backup.json";
 
     let db = JSON.parse(localStorage.getItem('cbt_v6_db')) || { folders: { 'root': { name: '홈', parent: null, children: [] }, 'free_memo': { name: '자유 메모', parent: 'root', children: [] } } };
-    let currentId = 'root', appMode = '', quizQueue = [], quizIdx = 0, editingItem = null, tokenClient;
+    let currentId = 'root', appMode = '', quizQueue = [], quizIdx = 0, editingItem = null, tokenClient, currentSort = 'name';
 
     function saveDB() { localStorage.setItem('cbt_v6_db', JSON.stringify(db)); }
 
-    // --- 렌더링 통합 함수 (중요!) ---
     function render() {
         const currentView = document.querySelector('.view:not(.hidden)');
         if(!currentView) return;
@@ -103,7 +128,7 @@
         if(currentView.id === 'view-memo') renderMemoHub();
     }
 
-    // --- 동기화 로직 ---
+    // --- 동기화 ---
     function gInit() {
         gapi.load('client', async () => { await gapi.client.init({ discoveryDocs: DISCOVERY_DOCS }); });
         tokenClient = google.accounts.oauth2.initTokenClient({
@@ -116,7 +141,7 @@
             }
         });
     }
-
+    function handleAuthClick() { tokenClient.requestAccessToken({prompt: 'consent'}); }
     async function getOrCreateFolder() {
         const res = await gapi.client.drive.files.list({ q: `name='${BACKUP_FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false` });
         if (res.result.files.length > 0) return res.result.files[0].id;
@@ -124,7 +149,6 @@
         const newFolder = await gapi.client.drive.files.create({ resource: folderMetadata, fields: 'id' });
         return newFolder.result.id;
     }
-
     async function syncToDrive() {
         try {
             const folderId = await getOrCreateFolder();
@@ -132,7 +156,6 @@
             const files = listRes.result.files;
             const content = JSON.stringify(db);
             const accessToken = gapi.auth.getToken().access_token;
-
             if (files.length > 0) {
                 await fetch(`https://www.googleapis.com/upload/drive/v3/files/${files[0].id}?uploadType=media`, {
                     method: 'PATCH', headers: { Authorization: `Bearer ${accessToken}` }, body: content
@@ -146,10 +169,9 @@
                     method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body: form
                 });
             }
-            alert("My-CBT-Backup 폴더에 백업 완료!");
+            alert("백업 완료!");
         } catch (e) { alert("오류: " + e.message); }
     }
-
     async function pullFromDrive() {
         try {
             const listRes = await gapi.client.drive.files.list({ q: `name='${BACKUP_FILE_NAME}' and trashed=false`, fields: 'files(id)' });
@@ -160,8 +182,6 @@
             alert("동기화 완료!");
         } catch (e) { alert("실패: " + e.message); }
     }
-
-    function handleAuthClick() { tokenClient.requestAccessToken({prompt: 'consent'}); }
 
     // --- 기본 기능 ---
     function enterMode(mode) {
@@ -174,7 +194,7 @@
     function renderNavBar() {
         const nav = document.getElementById('nav-bar');
         if(appMode === 'note') {
-            nav.innerHTML = `<div class="nav-item" onclick="goHome()">홈</div><div class="nav-item" onclick="togglePop('pop-add')">생성<div id="pop-add" class="pop-menu"><div onclick="openModal(); togglePop('pop-add');">폴더 생성</div><div onclick="showAddQuestion(); togglePop('pop-add');">문제 추가</div></div></div><div class="nav-item" onclick="togglePop('pop-quiz')">풀이<div id="pop-quiz" class="pop-menu"><div onclick="startQuiz(false); togglePop('pop-quiz');">순서대로</div><div onclick="startQuiz(true); togglePop('pop-quiz');">섞어서</div></div></div><div class="nav-item" onclick="switchTab('setting')">설정</div>`;
+            nav.innerHTML = `<div class="nav-item" onclick="goHome()">홈</div><div class="nav-item" onclick="togglePop('pop-add')">생성<div id="pop-add" class="pop-menu"><div onclick="openModal(); closePop('pop-add');">폴더 생성</div><div onclick="showAddQuestion(); closePop('pop-add');">문제 추가</div></div></div><div class="nav-item" onclick="togglePop('pop-quiz')">풀이<div id="pop-quiz" class="pop-menu"><div onclick="startQuiz(false); closePop('pop-quiz');">순서대로</div><div onclick="startQuiz(true); closePop('pop-quiz');">섞어서</div></div></div><div class="nav-item" onclick="switchTab('setting')">설정</div>`;
         } else {
             nav.innerHTML = `<div class="nav-item" onclick="goHome()">홈</div><div class="nav-item" onclick="showAddMemo()">생성</div><div class="nav-item" onclick="togglePop('pop-search')">검색<div id="pop-search" class="pop-menu" style="width:250px; padding:10px;"><input type="text" id="tag-search" placeholder="검색..." oninput="renderMemoHub()" style="margin:0;"></div></div><div class="nav-item" onclick="switchTab('setting')">설정</div>`;
         }
@@ -186,6 +206,7 @@
         document.querySelectorAll('.pop-menu').forEach(p => p.style.display = 'none');
         if(!isOpen) target.style.display = 'block';
     }
+    function closePop(id) { document.getElementById(id).style.display = 'none'; }
 
     function switchTab(tab) {
         document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
@@ -193,19 +214,61 @@
         render();
     }
 
+    // 정렬 로직
+    function setSort(type) {
+        currentSort = type;
+        document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        renderFolder();
+    }
+
     function renderFolder() {
         const list = document.getElementById('content-list');
         list.innerHTML = (currentId !== 'root') ? `<div class="back-link" onclick="goBack()">← 뒤로가기</div>` : '';
-        db.folders[currentId].children.forEach((item, idx) => {
+        
+        let children = [...db.folders[currentId].children];
+        
+        // 정렬 적용
+        if(currentSort === 'name') {
+            children.sort((a, b) => {
+                const nameA = a.type === 'folder' ? db.folders[a.id].name : a.text;
+                const nameB = b.type === 'folder' ? db.folders[b.id].name : b.text;
+                return nameA.localeCompare(nameB);
+            });
+        } else {
+            // date 정렬 (기본 배열 순서가 생성순이므로 뒤집기)
+            children.reverse();
+        }
+
+        children.forEach((item, idx) => {
             const isF = item.type === 'folder', data = isF ? db.folders[item.id] : item;
-            list.innerHTML += `<div class="card-sm" style="display:flex; justify-content:space-between; align-items:center;">
-                <div onclick="${isF ? `enterFolder('${item.id}')` : ''}" style="flex:1; cursor:pointer;">
-                    ${!isF && data.tags ? `<span style="color:var(--accent); font-size:11px; display:block;">${data.tags}</span>` : ''}
-                    <b>${data.name || data.text}</b>
-                </div>
-                <div style="display:flex;"><button class="action-btn btn-edit" onclick="${isF ? `editFolderName('${item.id}')` : `editQuestion(${idx})`}">수정</button><button class="action-btn btn-del" onclick="deleteItem(${idx})">삭제</button></div>
+            list.innerHTML += `<div class="card-sm" onclick="${isF ? `enterFolder('${item.id}')` : `viewDetail(${db.folders[currentId].children.indexOf(item)})`}" style="cursor:pointer;">
+                ${!isF && data.tags ? `<span style="color:var(--accent); font-size:11px; display:block;">${data.tags}</span>` : ''}
+                <b>${isF ? '📁 ' : '📄 '}${data.name || data.text}</b>
             </div>`;
         });
+    }
+
+    function viewDetail(idx) {
+        const item = db.folders[currentId].children[idx];
+        const detail = document.getElementById('detail-content');
+        const actions = document.getElementById('detail-actions');
+        
+        detail.innerHTML = `
+            <div style="color:var(--accent); font-size:12px; margin-bottom:10px;">${item.tags || '#태그없음'}</div>
+            <h3 class="pre-wrap">${item.text}</h3>
+            ${item.opts && item.opts[0] ? `<div style="margin:15px 0; opacity:0.8;">${item.opts.map((o,i)=>o?`<div>${i+1}. ${o}</div>`:'').join('')}</div>` : ''}
+            <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+                <b style="color:var(--correct)">정답: ${item.ans}번</b>
+                <div class="pre-wrap" style="margin-top:10px; opacity:0.9;">${item.note || '해설 없음'}</div>
+            </div>
+        `;
+        
+        actions.innerHTML = `
+            <button class="btn-full btn-edit" style="flex:1" onclick="editQuestion(${idx})">수정하기</button>
+            <button class="btn-full btn-del" style="flex:1" onclick="deleteItem(${idx})">삭제하기</button>
+        `;
+        switchTab('detail');
     }
 
     function renderMemoHub() {
@@ -213,7 +276,15 @@
         list.innerHTML = '';
         db.folders['free_memo'].children.forEach((item, idx) => {
             if((item.text + (item.note||"") + (item.tags||"")).toLowerCase().includes(query)) {
-                list.innerHTML += `<div class="card-lg"><div style="color:var(--accent); font-size:12px; font-weight:700;">${item.tags || '#메모'}</div><b style="font-size:1.1rem;">${item.text}</b><div class="pre-wrap" style="margin-top:12px; opacity:0.8; font-size:0.95rem; line-height:1.6;">${item.note || '(내용 없음)'}</div><div style="text-align:right; margin-top:15px;"><button class="action-btn btn-edit" onclick="editMemoFromHub(${idx})">수정</button><button class="action-btn btn-del" onclick="deleteMemoItem(${idx})">삭제</button></div></div>`;
+                list.innerHTML += `<div class="card-lg">
+                    <div style="color:var(--accent); font-size:12px; font-weight:700;">${item.tags || '#메모'}</div>
+                    <b style="font-size:1.1rem;">${item.text}</b>
+                    <div class="pre-wrap" style="margin-top:12px; opacity:0.8; font-size:0.95rem; line-height:1.6;">${item.note || '(내용 없음)'}</div>
+                    <div style="text-align:right; margin-top:15px;">
+                        <button class="action-btn btn-edit" onclick="editMemoFromHub(${idx})">수정</button>
+                        <button class="action-btn btn-del" onclick="deleteMemoItem(${idx})">삭제</button>
+                    </div>
+                </div>`;
             }
         });
     }
@@ -252,18 +323,38 @@
         quizIdx = 0; switchTab('quiz'); showQuiz();
     }
     function showQuiz() {
-        const q = quizQueue[quizIdx]; document.getElementById('quiz-progress').innerText = `${quizIdx + 1} / ${quizQueue.length}`;
+        const q = quizQueue[quizIdx]; 
+        document.getElementById('quiz-progress').innerText = `${quizIdx + 1} / ${quizQueue.length}`;
         document.getElementById('quiz-question').innerText = q.text;
-        document.getElementById('quiz-options').innerHTML = q.opts.map((opt, i) => opt ? `<button class="btn-full" style="background:var(--card); border:1px solid var(--border); text-align:left;" onclick="checkAnswer(${i+1})">${i+1}. ${opt}</button>` : '').join('');
-        document.getElementById('quiz-feedback').classList.add('hidden'); document.getElementById('quiz-next-btn').classList.add('hidden');
+        document.getElementById('quiz-options').innerHTML = q.opts.map((opt, i) => opt ? `<button id="opt-${i+1}" class="btn-opt" onclick="checkAnswer(${i+1})">${i+1}. ${opt}</button>` : '').join('');
+        document.getElementById('quiz-feedback').classList.add('hidden'); 
+        document.getElementById('quiz-next-btn').classList.add('hidden');
     }
     function checkAnswer(ans) {
-        const q = quizQueue[quizIdx]; const fb = document.getElementById('quiz-feedback');
-        fb.innerHTML = `<b>${ans===q.ans?'정답!':'오답!'} (정답: ${q.ans})</b><div style="margin-top:10px;">${q.note || ''}</div>`;
-        fb.classList.remove('hidden'); document.getElementById('quiz-next-btn').classList.remove('hidden');
-        document.querySelectorAll('#quiz-options button').forEach(b => b.disabled = true);
+        const q = quizQueue[quizIdx]; 
+        const fb = document.getElementById('quiz-feedback');
+        
+        document.querySelectorAll('.btn-opt').forEach(b => b.disabled = true);
+        
+        const correctBtn = document.getElementById(`opt-${q.ans}`);
+        const myBtn = document.getElementById(`opt-${ans}`);
+        
+        correctBtn.classList.add('correct');
+        if(ans !== q.ans) {
+            myBtn.classList.add('wrong');
+            fb.innerHTML = `<b style="color:var(--wrong)">오답입니다!</b><br><br>${q.note || ''}`;
+        } else {
+            fb.innerHTML = `<b style="color:var(--correct)">정답입니다! 🎉</b><br><br>${q.note || ''}`;
+        }
+        
+        fb.classList.remove('hidden'); 
+        document.getElementById('quiz-next-btn').classList.remove('hidden');
     }
-    function nextQuiz() { quizIdx++; if(quizIdx < quizQueue.length) showQuiz(); else { alert("완료!"); switchTab('folder'); } }
+    function nextQuiz() { 
+        quizIdx++; 
+        if(quizIdx < quizQueue.length) showQuiz(); 
+        else { alert("학습을 완료했습니다!"); switchTab('folder'); } 
+    }
     function cancelEdit() { switchTab(appMode === 'note' ? 'folder' : 'memo'); }
     function goBack() { currentId = db.folders[currentId].parent; render(); }
     function enterFolder(id) { currentId = id; render(); }
@@ -280,9 +371,8 @@
         }
         closeModal();
     }
-    function editFolderName(id) { const n = prompt("이름:", db.folders[id].name); if(n) { db.folders[id].name = n; saveDB(); render(); } }
-    function deleteItem(idx) { if(confirm("삭제?")) { db.folders[currentId].children.splice(idx,1); saveDB(); render(); } }
-    function deleteMemoItem(idx) { if(confirm("삭제?")) { db.folders['free_memo'].children.splice(idx,1); saveDB(); render(); } }
+    function deleteItem(idx) { if(confirm("삭제하시겠습니까?")) { db.folders[currentId].children.splice(idx,1); saveDB(); switchTab('folder'); } }
+    function deleteMemoItem(idx) { if(confirm("삭제하시겠습니까?")) { db.folders['free_memo'].children.splice(idx,1); saveDB(); renderMemoHub(); } }
     function toggleTheme() { document.body.classList.toggle('light-mode'); }
 
     window.onload = gInit;
